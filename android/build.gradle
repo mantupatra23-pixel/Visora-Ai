@@ -1,0 +1,59 @@
+// android/build.gradle (Top-level)
+
+buildscript {
+    // Use a recent Kotlin version compatible with modern Android Gradle Plugin
+    ext.kotlin_version = "1.9.25"
+
+    repositories {
+        google()
+        mavenCentral()
+        gradlePluginPortal()
+        // fallback repos (safe)
+        maven { url "https://dl.google.com/dl/android/maven2/" }
+        maven { url "https://storage.googleapis.com/download.flutter.io" }
+    }
+
+    dependencies {
+        // Android Gradle Plugin (choose a recent stable AGP)
+        // If CI asks for a specific AGP version, change this to that version.
+        classpath "com.android.tools.build:gradle:8.1.1"
+
+        // Kotlin Gradle plugin (use the kotlin_version above)
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
+
+        // If you use Google services / firebase, uncomment and adjust version:
+        // classpath "com.google.gms:google-services:4.4.0" // example
+
+        // Add other classpath dependencies here if your project uses them
+    }
+}
+
+allprojects {
+    repositories {
+        google()
+        mavenCentral()
+        // Flutter engine artifacts
+        maven { url "https://storage.googleapis.com/download.flutter.io" }
+        // jcenter is deprecated but kept as fallback (optional)
+        jcenter() // safe fallback
+    }
+}
+
+rootProject.buildDir = "../build"
+subprojects {
+    project.buildDir = "${rootProject.buildDir}/${project.name}"
+    project.evaluationDependsOn(':app')
+}
+
+// Safe Kotlin compiler options for Gradle tasks that use Kotlin
+tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
+    kotlinOptions {
+        jvmTarget = "17"
+        // You can set freeCompilerArgs here if needed
+    }
+}
+
+// Clean task
+tasks.register("clean", Delete) {
+    delete rootProject.buildDir
+}
