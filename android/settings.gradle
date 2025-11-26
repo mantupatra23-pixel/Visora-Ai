@@ -1,47 +1,30 @@
-// android/settings.gradle (final - CI friendly)
-
 pluginManagement {
     repositories {
+        // allow plugin resolution during configuration
+        gradlePluginPortal()
         google()
         mavenCentral()
-        gradlePluginPortal()
-        // Flutter engine artifacts (CI friendly)
-        maven { url "https://storage.googleapis.com/download.flutter.io" }
-        // Extra fallback repos
-        maven { url "https://maven.google.com" }
-        maven { url "https://dl.google.com/dl/android/maven2" }
+        // fallback
+        maven { url "https://dl.google.com/dl/android/maven2/" }
     }
-
-    // Use the new declarative Flutter plugin if needed (example line).
-    // You can pin plugin version here if you want, for example:
-    // plugins { id "dev.flutter.flutter-plugin" version "3.38.3" }
 }
 
 dependencyResolutionManagement {
+    // fail if some subproject tries to define its own repositories (safer)
     repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+
     repositories {
         google()
         mavenCentral()
-        // Flutter engine artifacts
-        maven { url "https://storage.googleapis.com/download.flutter.io" }
-        // Extra fallback repos
-        maven { url "https://maven.google.com" }
-        maven { url "https://dl.google.com/dl/android/maven2" }
+        // fallback
+        maven { url "https://dl.google.com/dl/android/maven2/" }
     }
 }
 
 rootProject.name = "visora_ai"
 
-// ------------------------------
-// Load local.properties (CI-friendly)
-/*
-  This reads local.properties if present to discover FLUTTER_ROOT for local dev.
-  In CI we expect FLUTTER_ROOT env to be set by the workflow (or the action
-  that sets up Flutter). If neither is present, we fail early with an explicit
-  error so logs are clear.
-*/
+// Load local.properties if present (CI will supply FLUTTER_ROOT or local.properties)
 import java.util.Properties
-
 def localProperties = new Properties()
 def localFile = new File(rootDir, "local.properties")
 if (localFile.exists()) {
@@ -50,19 +33,18 @@ if (localFile.exists()) {
     }
 }
 
+// Prefer FLUTTER_ROOT env var for CI
 def flutterRoot = System.getenv("FLUTTER_ROOT")
-if (flutterRoot == null || flutterRoot.trim().length() == 0) {
+if (flutterRoot == null || flutterRoot.trim().isEmpty()) {
     flutterRoot = localProperties.getProperty("flutter.sdk")
 }
 
-if (flutterRoot == null || flutterRoot.trim().length() == 0) {
-    throw new GradleException("Flutter SDK not found. Set FLUTTER_ROOT or add flutter.sdk in local.properties")
+if (flutterRoot == null || flutterRoot.trim().isEmpty()) {
+    throw new GradleException("Flutter SDK not found. Set FLUTTER_ROOT env or local.properties flutter.sdk")
 }
 
-// NOTE: do NOT `apply from: "${flutterRoot}/packages/flutter_tools/gradle/flutter.gradle"`
-// That imperative apply is deprecated/forbidden for recent Flutter/Gradle combos and
-// causes CI failures. Rely on the plugin system and the Gradle settings above instead.
+// Apply Flutter gradle integration from the SDK
+apply from: "${flutterRoot}/packages/flutter_tools/gradle/flutter.gradle"
 
 // include app module(s)
-include(":app")
-// include(":feature_module") // add other modules if you have them
+include ":app"

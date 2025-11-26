@@ -2,31 +2,39 @@
 buildscript {
     ext.kotlin_version = "1.9.25"
 
-    // Do NOT define repositories here for CI when settings.gradle manages them.
-    // repositories { }  // Intentionally left empty to prefer settings.gradle repositories
+    repositories {
+        // required to resolve Android Gradle Plugin & Kotlin plugin
+        google()
+        mavenCentral()
+        // explicit fallback (CI safe)
+        maven { url "https://dl.google.com/dl/android/maven2/" }
+    }
 
     dependencies {
-        // Keep the Android Gradle Plugin and Kotlin plugin entries here.
+        // Android Gradle Plugin
         classpath "com.android.tools.build:gradle:7.4.2"
+        // Kotlin Gradle plugin
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
 
-        // NOTE: Do not place application dependencies here; they belong in the module build.gradle
+        // NOTE: Do not place application dependencies here; they belong in module (app) build.gradle
     }
 }
 
+// Provide repositories for project-level dependencies (keeps CI robust)
 allprojects {
-    // Do NOT define repositories here when settings.gradle is the single source of truth.
-    // repositories { }   // intentionally empty for CI (settings.gradle handles repos)
-
-    // Flutter engine fallback (if needed) can still be defined in settings.gradle
-    // other per-project settings can remain here
+    repositories {
+        google()
+        mavenCentral()
+        // explicit fallback
+        maven { url "https://dl.google.com/dl/android/maven2/" }
+    }
 }
 
-// Optional: set root project build directory (example)
- // rootProject.buildDir = "../build"
+// Optional: set root project build directory
+// rootProject.buildDir = "../build"
 
 subprojects {
-    // if you need special per-subproject settings, add here
+    // If any special per-subproject config required, add here.
 }
 
 // Safe Kotlin compiler options for Gradle tasks
