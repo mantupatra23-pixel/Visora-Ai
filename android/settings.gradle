@@ -1,12 +1,12 @@
+// android/settings.gradle (final)
+
 pluginManagement {
     repositories {
         google()
         mavenCentral()
         gradlePluginPortal()
-
         // Flutter artifacts
-        maven { url "https://storage.googleapis.com/download.flutter.io" }
-
+        maven { url "https://storage.googleapis.com" }
         // Extra fallback repos (CI friendly)
         maven { url "https://maven.google.com" }
         maven { url "https://dl.google.com/dl/android/maven2/" }
@@ -18,19 +18,40 @@ dependencyResolutionManagement {
     repositories {
         google()
         mavenCentral()
-
-        // Flutter artifacts
-        maven { url "https://storage.googleapis.com/download.flutter.io" }
-
+        // Flutter engine artifacts (kept as first fallback)
+        maven { url "https://storage.googleapis.com" }
         // Extra fallback repos
         maven { url "https://maven.google.com" }
         maven { url "https://dl.google.com/dl/android/maven2/" }
+        // keep jcenter() as harmless fallback if needed
+        jcenter()
     }
 }
 
 rootProject.name = "visora_ai"
 
-// This line is required for integrating Flutter automatically
-apply from: file("../flutter.gradle")
+// IMPORTANT:
+// Use FLUTTER_ROOT or local.properties to locate flutter.gradle in CI environments.
+// Remove any apply from: file("../flutter.gradle") lines that assume flutter.gradle is in repo root.
+import java.util.Properties
 
-include ":app"
+def localProperties = new Properties()
+def localPropertiesFile = rootProject.file('local.properties')
+if (localPropertiesFile.exists()) {
+    localPropertiesFile.withReader('UTF-8') { reader ->
+        localProperties.load(reader)
+    }
+}
+
+def flutterRoot = localProperties.getProperty('flutter.sdk') ?: System.getenv('FLUTTER_ROOT')
+if (flutterRoot == null) {
+    // fail early with clear message in CI logs
+    throw new GradleException("Flutter SDK not found. Add 'flutter.sdk' to local.properties or set FLUTTER_ROOT environment variable in CI.")
+}
+
+// Apply Flutter gradle from the SDK (this is correct for CI actions that install Flutter)
+apply from: "${flutterRoot}/packages/flutter_tools/gradle/flutter.gradle"
+
+// include app module(s)
+include ':app'
+// include ':feature_module' // add if you have other modules
