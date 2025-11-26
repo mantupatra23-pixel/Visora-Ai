@@ -1,22 +1,27 @@
-// Top-level build file where you can add configuration options common to all sub-projects/modules.
-
+// android/build.gradle (Top-level Gradle build file for Flutter Android)
 buildscript {
+    // Kotlin version used by the project (update if needed)
     ext.kotlin_version = "1.9.25"
 
     repositories {
         google()
         mavenCentral()
-        // explicit fallback in case any artifact resolution needs the direct Google maven URL
+        gradlePluginPortal()
+        // fallback / additional repositories commonly needed in CI
+        maven { url "https://maven.google.com" }
         maven { url "https://dl.google.com/dl/android/maven2/" }
-        maven { url "https://repo.maven.apache.org/maven2/" }
+        maven { url "https://storage.googleapis.com/download.flutter.io" }
     }
 
     dependencies {
-        // Keep AGP compatible with Gradle 7.x (we use gradle wrapper 7.6)
-        classpath "com.android.tools.build:gradle:7.4.2"
+        // Android Gradle Plugin - choose a compatible version for your CI/flutter
+        classpath "com.android.tools.build:gradle:8.1.1"
+
+        // Kotlin Gradle plugin
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
 
-        // NOTE: Do not place application dependencies here; they belong in module build.gradle files
+        // (Optional) Google services plugin if you use firebase/google-services
+        // classpath "com.google.gms:google-services:4.4.0"
     }
 }
 
@@ -24,37 +29,42 @@ allprojects {
     repositories {
         google()
         mavenCentral()
-
-        // Flutter engine artifacts fallback
-        maven { url "https://storage.googleapis.com/download.flutter.io" }
-
-        // jcenter kept as fallback (deprecated but harmless)
-        jcenter()
-
-        // explicit google maven as extra fallback
+        // Add common mirrors / fallbacks used by CI runners
+        maven { url "https://maven.google.com" }
         maven { url "https://dl.google.com/dl/android/maven2/" }
-
-        // explicit maven central fallback
-        maven { url "https://repo.maven.apache.org/maven2/" }
+        maven { url "https://storage.googleapis.com/download.flutter.io" }
+        // jcenter kept as safe fallback (read-only)
+        jcenter() // safe fallback
     }
 }
 
-// Optional: set root project build directory (if you use custom layout)
+/*
+  Keep a single build dir outside android folder so CI caches and tools behave nicely
+  and to avoid nested build artifacts inside the flutter project.
+*/
 rootProject.buildDir = "../build"
 
 subprojects {
+    // place each subproject's build dir inside the root build dir for cleanliness
     project.buildDir = "${rootProject.buildDir}/${project.name}"
-    project.evaluationDependsOn(':app')
+    // if you have :app evaluation dependencies
+    project.evaluationDependsOn(":app")
 }
 
-// Safe Kotlin compiler options for Gradle tasks
+/*
+  Safe Kotlin compiler settings across the build (applies when KotlinCompile tasks exist).
+  This helps avoid "incompatible Kotlin metadata" errors on CI.
+*/
 tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
     kotlinOptions {
         jvmTarget = "17"
+        apiVersion = "1.9"
+        languageVersion = "1.9"
+        // freeCompilerArgs = ['-Xjvm-default=all'] // uncomment if you need specific args
     }
 }
 
-// Register a clean task that removes the root build directory
+// Clean task
 tasks.register("clean", Delete) {
     delete rootProject.buildDir
 }

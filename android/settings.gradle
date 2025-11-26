@@ -1,14 +1,15 @@
-// android/settings.gradle (Groovy)
-
 pluginManagement {
     repositories {
         google()
         mavenCentral()
         gradlePluginPortal()
-        // fallback to direct Google maven URL
+
+        // Flutter artifacts
+        maven { url "https://storage.googleapis.com/download.flutter.io" }
+
+        // Extra fallback repos (CI friendly)
+        maven { url "https://maven.google.com" }
         maven { url "https://dl.google.com/dl/android/maven2/" }
-        // fallback to Maven Central URL
-        maven { url "https://repo.maven.apache.org/maven2/" }
     }
 }
 
@@ -17,17 +18,19 @@ dependencyResolutionManagement {
     repositories {
         google()
         mavenCentral()
-        // Flutter engine artifacts fallback
+
+        // Flutter artifacts
         maven { url "https://storage.googleapis.com/download.flutter.io" }
-        // explicit Google maven fallback
+
+        // Extra fallback repos
+        maven { url "https://maven.google.com" }
         maven { url "https://dl.google.com/dl/android/maven2/" }
-        // direct Maven Central fallback
-        maven { url "https://repo.maven.apache.org/maven2/" }
-        // harmless fallback (kept for older libs)
-        jcenter()
     }
 }
 
 rootProject.name = "visora_ai"
 
-include ':app'
+// This line is required for integrating Flutter automatically
+apply from: file("../flutter.gradle")
+
+include ":app"
