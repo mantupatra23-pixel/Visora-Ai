@@ -21,20 +21,9 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: '17'
+          java-version: 17
 
-      - name: Cache pub packages
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.pub-cache
-            ~/.pub-cache/bin
-            .dart_tool
-          key: ${{ runner.os }}-pub-${{ hashFiles('**/pubspec.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-pub-
-
-      - name: Setup Flutter (stable)
+      - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
           channel: stable
@@ -46,63 +35,67 @@ jobs:
       - name: Flutter doctor
         run: flutter doctor -v
 
-      - name: Ensure android folder exists (safe)
-        shell: bash
+      - name: Show repo root and list
         run: |
-          if [ ! -d android ]; then
-            echo "::warning::android folder not found — creating android via flutter create"
+          echo "PWD: $(pwd)"
+          ls -la
+          echo "List android folder:"
+          ls -la android || true
+
+      - name: Ensure android folder exists (create if missing)
+        run: |
+          if [ ! -d "android" ]; then
+            echo "android folder missing — running flutter create for android"
             flutter create --platforms=android .
           else
-            echo "android folder exists"
+            echo "android exists"
           fi
-          ls -la android || true
 
-      - name: Ensure gradlew exists and is executable
-        shell: bash
+      - name: Ensure gradlew is executable (if present)
         run: |
-          if [ -f android/gradlew ]; then
-            echo "Found android/gradlew — making executable"
+          if [ -f "android/gradlew" ]; then
             chmod +x android/gradlew || true
+            echo "gradlew set executable"
           else
-            echo "::warning::android/gradlew not found. Listing repo root:"
-            ls -la || true
-            echo "Attempting to create wrapper (may fail if gradle not present)"
-            if [ -d android ]; then
-              pushd android
-              ./gradlew wrapper || true
-              popd
-            fi
+            echo "android/gradlew not found!"
+            ls -la android || true
           fi
-          ls -la android || true
+        shell: bash
+
+      - name: Flutter pub get
+        run: flutter pub get
 
       - name: Print Gradle / Java info
-        shell: bash
         run: |
           echo "JAVA_HOME=$JAVA_HOME"
           java -version || true
-          ./android/gradlew -v || true
-
-      - name: Flutter pub get
+          if [ -f "android/gradlew" ]; then
+            ./android/gradlew --version || true
+          fi
         shell: bash
-        run: flutter pub get
 
       - name: Clean build (safe)
-        shell: bash
         run: flutter clean || true
 
-      - name: Build APK (release) and save verbose logs
-        shell: bash
+      - name: Build APK (release) — verbose logs captured
         run: |
           set -o pipefail
-          mkdir -p .github/build-logs
-          # build with verbose and save combined output
-          flutter build apk --release --split-per-abi --verbose 2>&1 | tee build_logs.txt
+          flutter build apk --release --split-per-abi -v 2>&1 | tee build_logs.txt
           echo "::set-output name=build_exit::$?"
+        shell: bash
         timeout-minutes: 40
 
+      - name: Show build logs tail
+        if: always()
+        run: tail -n 200 build_logs.txt || true
+
       - name: List build outputs (quick)
+        if: always()
+        run: |
+          echo "list build outputs:"
+          ls -la build/app/outputs || true
+          find build/app -maxdepth 4 -type f -name "*.apk" -o -name "*.aab" -print || true
         shell: bash
-        run: ls -la build/app/outputs || true
 
       - name: Upload APK artifacts (if created)
         if: always()
@@ -111,14 +104,9 @@ jobs:
           name: visora-apks
           path: build/app/outputs/flutter-apk/*.apk
 
-      - name: Upload build logs (always)
+      - name: Upload build logs
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: visora-build-logs
           path: build_logs.txt
-
-      - name: Post job cleanup
-        if: always()
-        run: |
-          echo "Done"
