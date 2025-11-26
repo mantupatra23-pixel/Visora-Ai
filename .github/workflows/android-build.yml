@@ -1,4 +1,4 @@
-name: Android Release Build
+name: Android Release Build (verbose logs)
 
 on:
   push:
@@ -9,11 +9,10 @@ jobs:
   build:
     runs-on: ubuntu-latest
     env:
-      # optional: reduce verbose logs
       PUB_ENVIRONMENT: "github_actions"
 
     steps:
-      - name: Checkout repository
+      - name: Checkout repo
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
@@ -44,33 +43,35 @@ jobs:
       - name: Flutter --version
         run: flutter --version
 
+      - name: Flutter doctor (show environment)
+        run: flutter doctor -v
+
       - name: Flutter pub get
         run: flutter pub get
 
-      - name: Run Flutter analyze (optional)
-        run: flutter analyze || true
+      - name: Clean build (safe)
+        run: flutter clean || true
 
-      - name: Build APK (release, split per abi)
-        run: flutter build apk --release --split-per-abi
-
-      # Optional: Build app bundle as well (uncomment if you want AAB)
-      # - name: Build AppBundle (release)
-      #   run: flutter build appbundle --release
+      - name: Build APK (release, split per abi) - verbose
+        # Save full output to a file so we can inspect on failure
+        run: |
+          set -o pipefail
+          flutter build apk --release --split-per-abi -v 2>&1 | tee build_logs.txt
+        timeout-minutes: 30
 
       - name: List build outputs
-        run: ls -la build/app/outputs/flutter-apk || true
+        run: ls -la build/app/outputs || true
 
-      - name: Upload APK artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: visora-ai-apks
-          path: |
-            build/app/outputs/flutter-apk/*.apk
-
-      # If you also built AAB, upload it:
-      - name: Upload AAB (if exists)
+      - name: Upload APK artifacts (if created)
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: visora-ai-aab
-          path: build/app/outputs/bundle/release/*.aab
+          name: visora-ai-apks
+          path: build/app/outputs/flutter-apk/*.apk
+
+      - name: Upload build logs (always)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: visora-build-logs
+          path: build_logs.txt
