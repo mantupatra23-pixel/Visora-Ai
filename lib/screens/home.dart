@@ -1,73 +1,65 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../providers/video_provider.dart';
+import '../services/api_service.dart';
 import '../widgets/video_card.dart';
+import 'create.dart';
 
-class HomeScreen extends StatelessWidget {
-  final List<Map<String, String>> mockRecent = List.generate(4, (i) => {
-        'title': 'Motivation Short #${i+1}',
-        'subtitle': 'AI created • ${30+i}s',
-        'thumb': '', // leave empty or add asset path
-      });
+class HomeScreen extends StatefulWidget {
+  @override
+  _HomeScreenState createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  bool _init = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_init) {
+      final api = Provider.of<ApiService>(context, listen: false);
+      Provider.of<VideoProvider>(context, listen: false).loadVideos(api);
+      _init = true;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    final provider = Provider.of<VideoProvider>(context);
     return SafeArea(
-      child: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal:16, vertical: 12),
-            child: Row(
-              children: [
-                Text('Visora AI', style: Theme.of(context).textTheme.headline6?.copyWith(color: Theme.of(context).primaryColor)),
-                Spacer(),
-                IconButton(icon: Icon(Icons.search), onPressed: (){}),
-                IconButton(icon: Icon(Icons.notifications_none), onPressed: (){}),
-              ],
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal:16),
-            child: Card(
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              child: ListTile(
-                contentPadding: EdgeInsets.all(16),
-                leading: Icon(Icons.flash_on, color: Theme.of(context).colorScheme.secondary, size: 36),
-                title: Text('Create a video in 60s', style: TextStyle(fontWeight: FontWeight.bold)),
-                subtitle: Text('AI script → voice → video'),
-                trailing: ElevatedButton(
-                  child: Text('Create'),
-                  onPressed: () {
-                    Navigator.of(context).push(MaterialPageRoute(builder: (_) => Scaffold(body: Center(child: Text('Go to Create')))));
-                  },
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text('Visora AI'),
+          actions: [IconButton(onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => CreateScreen())), icon: Icon(Icons.create))],
+        ),
+        body: RefreshIndicator(
+          onRefresh: () => Provider.of<VideoProvider>(context, listen: false).loadVideos(Provider.of<ApiService>(context, listen: false)),
+          child: ListView(
+            padding: EdgeInsets.all(12),
+            children: [
+              Card(
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                child: ListTile(
+                  title: Text('Create video in 60s'),
+                  subtitle: Text('AI script -> voice -> template'),
+                  trailing: ElevatedButton(
+                    child: Text('Create'),
+                    onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => CreateScreen())),
+                  ),
                 ),
               ),
-            ),
-          ),
-          SizedBox(height: 12),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal:16),
-            child: Row(
-              children: [
-                Text('Recent', style: TextStyle(fontWeight: FontWeight.bold)),
-                Spacer(),
-                TextButton(onPressed: (){}, child: Text('See all')),
-              ],
-            ),
-          ),
-          SizedBox(height: 8),
-          Expanded(
-            child: ListView.builder(
-              padding: EdgeInsets.symmetric(horizontal: 16),
-              itemCount: mockRecent.length,
-              itemBuilder: (_, i) => Padding(
-                padding: const EdgeInsets.only(bottom:12),
-                child: VideoCard(
-                  title: mockRecent[i]['title'] ?? '',
-                  subtitle: mockRecent[i]['subtitle'] ?? '',
-                ),
+              SizedBox(height: 12),
+              Text('Recent', style: Theme.of(context).textTheme.headline6),
+              SizedBox(height: 8),
+              if (provider.loading) Center(child: CircularProgressIndicator()),
+              for (var v in provider.videos) VideoCard(video: v),
+              if (provider.videos.isEmpty && !provider.loading) Padding(
+                padding: EdgeInsets.only(top: 24),
+                child: Center(child: Text('No videos yet. Tap Create.')),
               ),
-            ),
-          )
-        ],
+            ],
+          ),
+        ),
       ),
     );
   }

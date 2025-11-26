@@ -1,29 +1,41 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../providers/video_provider.dart';
 import '../widgets/video_card.dart';
+import '../services/api_service.dart';
 
-class GalleryScreen extends StatelessWidget {
-  final items = List.generate(8, (i) => {
-    'title': 'Video ${i+1}',
-    'subtitle': 'Ready • ${i+1} MB',
-  });
+class GalleryScreen extends StatefulWidget {
+  @override
+  _GalleryScreenState createState() => _GalleryScreenState();
+}
+
+class _GalleryScreenState extends State<GalleryScreen> {
+  bool _init = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_init) {
+      final api = Provider.of<ApiService>(context, listen: false);
+      Provider.of<VideoProvider>(context, listen: false).loadVideos(api);
+      _init = true;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(child: Column(
-      children: [
-        Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Row(children: [Text('Gallery', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)), Spacer(), IconButton(icon: Icon(Icons.refresh), onPressed: (){})]),
-        ),
-        Expanded(
-          child: GridView.builder(
-            padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 2, childAspectRatio: 16/9, crossAxisSpacing: 12, mainAxisSpacing: 12),
-            itemCount: items.length,
-            itemBuilder: (_, i) => VideoCard(title: items[i]['title']!, subtitle: items[i]['subtitle']!),
-          ),
-        )
-      ],
-    ));
+    final provider = Provider.of<VideoProvider>(context);
+    return Scaffold(
+      appBar: AppBar(title: Text('Gallery')),
+      body: provider.loading
+          ? Center(child: CircularProgressIndicator())
+          : provider.videos.isEmpty
+              ? Center(child: Text('No videos yet'))
+              : ListView.builder(
+                  padding: EdgeInsets.all(12),
+                  itemCount: provider.videos.length,
+                  itemBuilder: (ctx, i) => VideoCard(video: provider.videos[i]),
+                ),
+    );
   }
 }
