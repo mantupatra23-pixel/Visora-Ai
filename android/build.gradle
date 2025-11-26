@@ -1,1 +1,42 @@
-# <-- paste the exact block above here (without the '# <--' line)
+// Top-level build file where you can add configuration options common to all sub-projects/modules.
+buildscript {
+    ext.kotlin_version = "1.9.25"
+
+    // Do NOT define repositories here for CI when settings.gradle manages them.
+    // repositories { }  // Intentionally left empty to prefer settings.gradle repositories
+
+    dependencies {
+        // Keep the Android Gradle Plugin and Kotlin plugin entries here.
+        classpath "com.android.tools.build:gradle:7.4.2"
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
+
+        // NOTE: Do not place application dependencies here; they belong in the module build.gradle
+    }
+}
+
+allprojects {
+    // Do NOT define repositories here when settings.gradle is the single source of truth.
+    // repositories { }   // intentionally empty for CI (settings.gradle handles repos)
+
+    // Flutter engine fallback (if needed) can still be defined in settings.gradle
+    // other per-project settings can remain here
+}
+
+// Optional: set root project build directory (example)
+ // rootProject.buildDir = "../build"
+
+subprojects {
+    // if you need special per-subproject settings, add here
+}
+
+// Safe Kotlin compiler options for Gradle tasks
+tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
+    kotlinOptions {
+        jvmTarget = "17"
+    }
+}
+
+// Register a clean task that removes the root project build directory
+tasks.register("clean", Delete) {
+    delete rootProject.buildDir
+}
