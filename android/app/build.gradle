@@ -1,4 +1,4 @@
-// android/app/build.gradle
+// android/app/build.gradle (FINAL - use plugins block + CI-friendly flutter sdk loading)
 
 plugins {
     id 'com.android.application'
@@ -7,24 +7,24 @@ plugins {
 
 import java.util.Properties
 
+// Load local.properties (CI friendly)
 def localProperties = new Properties()
-def localPropertiesFile = rootProject.file('local.properties')
-if (localPropertiesFile.exists()) {
-    localPropertiesFile.withReader('UTF-8') { reader ->
-        localProperties.load(reader)
-    }
+def localFile = rootProject.file("local.properties")
+if (localFile.exists()) {
+    localFile.withReader('UTF-8') { reader -> localProperties.load(reader) }
 }
 
-def flutterRoot = localProperties.getProperty('flutter.sdk')
-if (flutterRoot == null) {
-    flutterRoot = System.getenv("FLUTTER_ROOT")
+// Determine Flutter root from env or local.properties
+def flutterRoot = System.getenv("FLUTTER_ROOT")
+if (flutterRoot == null || flutterRoot.trim() == "") {
+    flutterRoot = localProperties.getProperty("flutter.sdk")
+}
+if (flutterRoot == null || flutterRoot.trim() == "") {
+    throw new GradleException("Flutter SDK not found. Set FLUTTER_ROOT env or local.properties flutter.sdk")
 }
 
-if (flutterRoot == null) {
-    throw new GradleException("Flutter SDK not found. Define location with flutter.sdk in the local.properties file or set the FLUTTER_ROOT environment variable.")
-}
-
-apply from: "$flutterRoot/packages/flutter_tools/gradle/flutter.gradle"
+// Apply Flutter gradle glue
+apply from: "${flutterRoot}/packages/flutter_tools/gradle/flutter.gradle"
 
 android {
     namespace "com.visora.ai"
@@ -41,11 +41,10 @@ android {
 
     buildTypes {
         release {
-            // For CI/testing you can keep debug signing or provide your release keystore later
-            signingConfig signingConfigs.debug
+            // For CI/testing keep debuggable signing to avoid missing keystore issues (adjust for production)
+            // signingConfig signingConfigs.debug
             minifyEnabled false
             shrinkResources false
-            // If you want obfuscation later, enable proguard and provide rules
             // proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
         debug {
@@ -59,15 +58,22 @@ android {
     }
 
     kotlinOptions {
-        jvmTarget = '17'
+        jvmTarget = "17"
     }
+
+    // If you use viewBinding/dataBinding, enable here
+    // buildFeatures { viewBinding true }
 }
 
 flutter {
-    source '../../'
+    // Path back to Flutter project root (default for flutter module apps)
+    source '../..'
 }
 
 dependencies {
     implementation "androidx.core:core-ktx:1.13.0"
     implementation "androidx.multidex:multidex:2.0.1"
+    // Add other libs your app needs here
 }
+
+// Optional: if you need proguard rules, add files and keep above proguardFiles reference
