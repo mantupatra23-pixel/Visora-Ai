@@ -1,4 +1,4 @@
-name: Android Release Build (verbose logs)
+name: Android Release Build (diagnostic)
 
 on:
   push:
@@ -21,18 +21,7 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: 17
-
-      - name: Cache pub packages
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.pub-cache
-            ~/.pub-cache/bin
-            .dart_tool
-          key: ${{ runner.os }}-pub-${{ hashFiles('**/pubspec.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-pub-
+          java-version: '17'
 
       - name: Setup Flutter (stable)
         uses: subosito/flutter-action@v2
@@ -40,33 +29,64 @@ jobs:
           channel: stable
           cache: true
 
-      - name: Flutter --version
-        run: flutter --version
+      - name: Flutter --version & doctor
+        run: |
+          flutter --version
+          flutter doctor -v
 
-      - name: Flutter doctor (show environment)
-        run: flutter doctor -v
-
-      - name: Flutter pub get
+      - name: Get dependencies
         run: flutter pub get
+
+      # If android folder missing, recreate (safe)
+      - name: Ensure android folder exists (safe)
+        run: |
+          if [ ! -d "android" ]; then
+            echo "⚙️ android folder missing — running flutter create to regenerate platform files"
+            flutter create --platforms=android .
+          else
+            echo "✅ android folder exists"
+          fi
+
+      - name: Ensure gradlew exists & is executable
+        run: |
+          if [ -f "./android/gradlew" ]; then
+            chmod +x ./android/gradlew || true
+            echo "✅ made android/gradlew executable"
+          elif [ -f "./gradlew" ]; then
+            chmod +x ./gradlew || true
+            echo "✅ made ./gradlew executable"
+          else
+            echo "⚠️ gradlew not found in repo root nor android/ — trying to run flutter create again"
+            flutter create --platforms=android .
+            chmod +x ./android/gradlew || true
+          fi
+
+      - name: Print Gradle / Java info
+        run: |
+          pwd
+          ls -la
+          if [ -f "./android/gradlew" ]; then ./android/gradlew -v; fi
+          java -version || true
 
       - name: Clean build (safe)
         run: flutter clean || true
 
-      - name: Build APK (release, split per abi) - verbose
-        # Save full output to a file so we can inspect on failure
+      - name: Build APK (release, split per abi) and save verbose logs
         run: |
           set -o pipefail
-          flutter build apk --release --split-per-abi -v 2>&1 | tee build_logs.txt
-        timeout-minutes: 30
+          echo "==== START BUILD ====" > build_logs.txt
+          # run with verbose and capture exit code in file
+          flutter build apk --release --split-per-abi --verbose 2>&1 | tee -a build_logs.txt
+        timeout-minutes: 40
 
-      - name: List build outputs
+      - name: List build outputs (for quick check)
         run: ls -la build/app/outputs || true
 
       - name: Upload APK artifacts (if created)
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: visora-ai-apks
+          name: visora-apks
           path: build/app/outputs/flutter-apk/*.apk
 
       - name: Upload build logs (always)
