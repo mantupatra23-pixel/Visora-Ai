@@ -21,9 +21,9 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: 17
+          java-version: '17'
 
-      - name: Cache pub packages
+      - name: Cache pub & dart tool
         uses: actions/cache@v4
         with:
           path: |
@@ -49,26 +49,34 @@ jobs:
       - name: Flutter pub get
         run: flutter pub get
 
+      - name: Ensure gradlew executable (important)
+        run: chmod +x ./gradlew
+
       - name: Clean build (safe)
         run: flutter clean || true
 
-      - name: Build APK (release, split per abi) - verbose
-        # Save full output to a file so we can inspect on failure
+      - name: Build APK (release, split per abi)
         run: |
           set -o pipefail
-          flutter build apk --release --split-per-abi -v 2>&1 | tee build_logs.txt
+          flutter build apk --release --split-per-abi
         timeout-minutes: 30
 
       - name: List build outputs
-        run: ls -la build/app/outputs || true
+        run: ls -la build/app/outputs/flutter-apk || true
 
       - name: Upload APK artifacts (if created)
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: visora-ai-apks
+          name: visora-apks
           path: build/app/outputs/flutter-apk/*.apk
 
+      - name: Save build logs (always)
+        if: always()
+        run: |
+          echo "==== flutter build logs ====" > build_logs.txt
+          flutter build apk --release --split-per-abi --verbose 2>&1 | tee -a build_logs.txt || true
+        # Upload the log file
       - name: Upload build logs (always)
         if: always()
         uses: actions/upload-artifact@v4
