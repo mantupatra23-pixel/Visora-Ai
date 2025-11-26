@@ -1,4 +1,4 @@
-// Top-level build file where you can add configuration options common to all sub-projects/modules.
+// Top-level build file where you can add configuration options
 
 buildscript {
     ext.kotlin_version = "1.9.25"
@@ -6,16 +6,20 @@ buildscript {
     repositories {
         google()
         mavenCentral()
-        // explicit fallback in case any artifact resolution needs the direct Google maven URL
+
+        // explicit fallback in case any artifact is missing
         maven { url "https://dl.google.com/dl/android/maven2/" }
+        maven { url "https://repo.maven.apache.org/maven2/" }
     }
 
     dependencies {
-        // Use a compatible Android Gradle Plugin version
-        classpath "com.android.tools.build:gradle:7.4.2"
+        // Use a compatible Android Gradle Plugin
+        classpath "com.android.tools.build:gradle:8.3.2"
+
+        // Kotlin Gradle plugin
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
 
-        // NOTE: Do not place application dependencies here; they belong in the individual module build.gradle files
+        // NOTE: Do not place application dependencies here
     }
 }
 
@@ -23,16 +27,22 @@ allprojects {
     repositories {
         google()
         mavenCentral()
-        // Flutter engine artifacts (keeps as fallback)
+
+        // Flutter engine artifacts (kept as fallback)
         maven { url "https://storage.googleapis.com/download.flutter.io" }
-        // jcenter kept as fallback (deprecated but safe)
-        jcenter() // safe fallback, does not hurt
-        // explicit google maven as extra fallback
+
+        // jcenter kept as fallback (deprecated, but safe for missing libs)
+        jcenter()
+
+        // explicit google maven fallback
         maven { url "https://dl.google.com/dl/android/maven2/" }
+
+        // explicit maven central fallback
+        maven { url "https://repo.maven.apache.org/maven2/" }
     }
 }
 
-// Optional: set root project build directory (if you use custom layout)
+// Optional: set root project build directory
 rootProject.buildDir = "../build"
 
 subprojects {
@@ -40,11 +50,10 @@ subprojects {
     project.evaluationDependsOn(':app')
 }
 
- // Safe Kotlin compiler options for Gradle tasks if needed
+// Safe Kotlin compiler options for Gradle tasks
 tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
     kotlinOptions {
         jvmTarget = "17"
-        // freeCompilerArgs = ["-Xjvm-default=all"]
     }
 }
 
