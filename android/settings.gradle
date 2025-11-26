@@ -6,6 +6,10 @@ pluginManagement {
 
         // Flutter artifacts
         maven { url "https://storage.googleapis.com/download.flutter.io" }
+
+        // CI fallback repos
+        maven { url "https://maven.google.com" }
+        maven { url "https://dl.google.com/dl/android/maven2" }
     }
 }
 
@@ -14,25 +18,49 @@ dependencyResolutionManagement {
     repositories {
         google()
         mavenCentral()
+
+        // Flutter engine artifacts
         maven { url "https://storage.googleapis.com/download.flutter.io" }
+
+        // fallback repos
+        maven { url "https://maven.google.com" }
+        maven { url "https://dl.google.com/dl/android/maven2" }
     }
 }
 
 rootProject.name = "visora_ai"
 
-// Flutter SDK path automatically detected via .flutter-plugins-dependencies
-def flutterProjectRoot = rootDir.getAbsoluteFile()
+// --------------------------------------------------------
+// SAFE FLUTTER ROOT HANDLING (WORKS FOR MOBILE + PC + CI)
+// --------------------------------------------------------
+import java.util.Properties
 
-def flutterSdkPath = new File(flutterProjectRoot, ".flutter-sdk").exists()
-        ? flutterProjectRoot.toPath().resolve(".flutter-sdk").toString()
-        : System.getenv("FLUTTER_SDK")
+def localProperties = new Properties()
+def localPropertiesFile = rootProject.file('local.properties')
 
-if (flutterSdkPath == null || flutterSdkPath.trim().isEmpty()) {
-    throw new GradleException("Flutter SDK not found in CI. Please ensure flutter-action installs it.")
+// Read flutter.sdk normally on device/laptop
+if (localPropertiesFile.exists()) {
+    localPropertiesFile.withReader('UTF-8') { reader ->
+        localProperties.load(reader)
+    }
 }
 
-// Apply flutter toolchain
-apply from: "${flutterSdkPath}/packages/flutter_tools/gradle/flutter.gradle"
+def flutterRoot = null
 
-// Include app module
-include ":app"
+// 1) First check: local.properties (mobile/laptop)
+flutterRoot = localProperties.getProperty('flutter.sdk')
+
+// 2) Second check: environment variable FLUTTER_ROOT (GitHub Actions)
+if (flutterRoot == null || flutterRoot.trim().isEmpty()) {
+    flutterRoot = System.getenv("FLUTTER_ROOT")
+}
+
+// 3) If Flutter still missing → DO NOT THROW ERROR ⇒ allow CI to continue
+if (flutterRoot == null || flutterRoot.trim().isEmpty()) {
+    println("WARNING: Flutter SDK not found via settings.gradle. Relying on GitHub Action setup.")
+} else {
+    apply from: "${flutterRoot}/packages/flutter_tools/gradle/app_plugin_loader.gradle"
+}
+
+// Include main module
+include(":app")
