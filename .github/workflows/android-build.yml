@@ -1,95 +1,37 @@
-name: Android Build CI
+name: Android Release Build
 
 on:
   push:
-    branches: [ main ]
-  pull_request:
     branches: [ main ]
   workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
-    env:
-      JAVA_HOME: /usr/lib/jvm/java-17-temurin
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
-      - name: Setup Java 17
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: '17'
+          java-version: 17
 
-      - name: Setup Flutter (stable)
+      - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
           channel: stable
-          flutter-version: '3.22.0'
-
-      - name: Regenerate Flutter Android files (safe)
-        run: |
-          set -e
-          echo ">>> Ensuring pub dependencies..."
-          flutter pub get
-
-          if [ -d "android" ]; then
-            echo ">>> Backing up existing android/ to android_backup_TIMESTAMP..."
-            mv android android_backup_$(date +%s) || true
-          fi
-
-          echo ">>> Recreating Android project for platform=android (overwrite)"
-          # --overwrite ensures missing or old android files are replaced
-          flutter create --platforms=android --org com.visora.ai --project-name visora_ai --overwrite .
-          echo ">>> Re-running pub get"
-          flutter pub get
-        shell: bash
-
-      - name: Create android/local.properties (CI-safe)
-        run: |
-          set -e
-          echo ">>> Detecting flutter binary"
-          FLUTTER_BIN=$(which flutter || true)
-          if [ -z "$FLUTTER_BIN" ]; then
-            echo "flutter not found on PATH"
-            exit 1
-          fi
-
-          # Determine FLUTTER_ROOT
-          FLUTTER_ROOT=$(dirname "$(dirname "$FLUTTER_BIN")")
-          # Some actions put flutter under /opt/hostedtoolcache or similar; normalize:
-          if [ -z "$FLUTTER_ROOT" ]; then
-            echo "Could not find FLUTTER_ROOT"
-            exit 1
-          fi
-
-          mkdir -p android
-          echo "flutter.sdk=${FLUTTER_ROOT}" > android/local.properties
-          echo "Wrote android/local.properties with flutter.sdk=${FLUTTER_ROOT}"
-          cat android/local.properties
-        shell: bash
-
-      - name: Flutter doctor
-        run: flutter doctor -v
-        shell: bash
 
       - name: Flutter pub get
         run: flutter pub get
-        shell: bash
 
-      - name: Build Debug APK (quick test)
-        run: flutter build apk --debug --no-shrink
-        shell: bash
-
-      - name: Build Release APK
-        run: flutter build apk --release --no-shrink
-        shell: bash
+      - name: Build APK (Release)
+        run: flutter build apk --release
 
       - name: Upload APK
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v3
         with:
           name: visora-ai-apk
-          path: build/app/outputs/flutter-apk/*.apk
+          path: build/app/outputs/flutter-apk/app-release.apk
