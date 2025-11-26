@@ -8,30 +8,69 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      # optional: reduce verbose logs
+      PUB_ENVIRONMENT: "github_actions"
 
     steps:
-      - name: Checkout
+      - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-      - name: Setup Java
+      - name: Set up Java 17
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: 17
 
-      - name: Setup Flutter
+      - name: Cache pub packages
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.pub-cache
+            ~/.pub-cache/bin
+            .dart_tool
+          key: ${{ runner.os }}-pub-${{ hashFiles('**/pubspec.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pub-
+
+      - name: Setup Flutter (stable)
         uses: subosito/flutter-action@v2
         with:
           channel: stable
+          cache: true
+
+      - name: Flutter --version
+        run: flutter --version
 
       - name: Flutter pub get
         run: flutter pub get
 
-      - name: Build APK (Release)
-        run: flutter build apk --release
+      - name: Run Flutter analyze (optional)
+        run: flutter analyze || true
 
-      - name: Upload APK
-        uses: actions/upload-artifact@v3
+      - name: Build APK (release, split per abi)
+        run: flutter build apk --release --split-per-abi
+
+      # Optional: Build app bundle as well (uncomment if you want AAB)
+      # - name: Build AppBundle (release)
+      #   run: flutter build appbundle --release
+
+      - name: List build outputs
+        run: ls -la build/app/outputs/flutter-apk || true
+
+      - name: Upload APK artifacts
+        uses: actions/upload-artifact@v4
         with:
-          name: visora-ai-apk
-          path: build/app/outputs/flutter-apk/app-release.apk
+          name: visora-ai-apks
+          path: |
+            build/app/outputs/flutter-apk/*.apk
+
+      # If you also built AAB, upload it:
+      - name: Upload AAB (if exists)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: visora-ai-aab
+          path: build/app/outputs/bundle/release/*.aab
