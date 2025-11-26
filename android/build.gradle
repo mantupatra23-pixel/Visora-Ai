@@ -3,48 +3,30 @@ buildscript {
     ext.kotlin_version = "1.9.25"
 
     repositories {
-        // required to resolve Android Gradle Plugin & Kotlin plugin
         google()
         mavenCentral()
-        // explicit fallback (CI safe)
-        maven { url "https://dl.google.com/dl/android/maven2/" }
+        maven { url "https://storage.googleapis.com/download.flutter.io" }
     }
 
     dependencies {
-        // Android Gradle Plugin
         classpath "com.android.tools.build:gradle:7.4.2"
-        // Kotlin Gradle plugin
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
-
-        // NOTE: Do not place application dependencies here; they belong in module (app) build.gradle
+        // NOTE: Do not place application dependencies here; they belong in the individual module build.gradle files
     }
 }
 
-// Provide repositories for project-level dependencies (keeps CI robust)
 allprojects {
     repositories {
         google()
         mavenCentral()
-        // explicit fallback
-        maven { url "https://dl.google.com/dl/android/maven2/" }
+        maven { url "https://storage.googleapis.com/download.flutter.io" }
     }
 }
-
-// Optional: set root project build directory
-// rootProject.buildDir = "../build"
 
 subprojects {
-    // If any special per-subproject config required, add here.
+    // Example: set common compile options (if you need)
 }
 
-// Safe Kotlin compiler options for Gradle tasks
-tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
-    kotlinOptions {
-        jvmTarget = "17"
-    }
-}
-
-// Register a clean task that removes the root project build directory
-tasks.register("clean", Delete) {
+task clean(type: Delete) {
     delete rootProject.buildDir
 }
