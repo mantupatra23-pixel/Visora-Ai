@@ -12,98 +12,113 @@ jobs:
       PUB_ENVIRONMENT: "github_actions"
 
     steps:
-    - name: Checkout repo
-      uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-    - name: Set up Java 17
-      uses: actions/setup-java@v4
-      with:
-        distribution: temurin
-        java-version: '17'
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
 
-    - name: Cache pub packages
-      uses: actions/cache@v4
-      with:
-        path: |
-          ~/.pub-cache
-          ~/.pub-cache/bin
-          .dart_tool
-        key: ${{ runner.os }}-pub-${{ hashFiles('**/pubspec.yaml') }}
-        restore-keys: |
-          ${{ runner.os }}-pub-
+      - name: Cache pub packages
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.pub-cache
+            ~/.pub-cache/bin
+            .dart_tool
+          key: ${{ runner.os }}-pub-${{ hashFiles('**/pubspec.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pub-
 
-    - name: Setup Flutter (stable)
-      uses: subosito/flutter-action@v2
-      with:
-        channel: stable
-        cache: true
+      - name: Setup Flutter (stable)
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
 
-    - name: Flutter --version
-      run: flutter --version
+      - name: Flutter --version
+        run: flutter --version
 
-    - name: Flutter doctor
-      run: flutter doctor -v
+      - name: Flutter doctor
+        run: flutter doctor -v
 
-    - name: Flutter pub get
-      run: flutter pub get
-
-    - name: Ensure android folder exists (safe)
-      run: |
-        if [ ! -d "android" ]; then
-          echo "⚙️ android folder missing — running flutter create for android..."
-          flutter create --platforms=android .
-        else
-          echo "✅ android folder exists"
-        fi
-      shell: bash
-
-    - name: Ensure gradlew exists & is executable (safe)
-      run: |
-        if [ -f "android/gradlew" ]; then
-          echo "Found android/gradlew — setting +x"
-          chmod +x android/gradlew || true
-        else
-          echo "android/gradlew not found after create — listing android:"
+      - name: Ensure android folder exists (safe)
+        shell: bash
+        run: |
+          if [ ! -d android ]; then
+            echo "::warning::android folder not found — creating android via flutter create"
+            flutter create --platforms=android .
+          else
+            echo "android folder exists"
+          fi
           ls -la android || true
-          echo "Listing repo root:"
-          ls -la || true
-        fi
-      shell: bash
 
-    - name: Print Gradle / Java info
-      run: |
-        echo "JAVA_HOME=$JAVA_HOME"
-        java -version || true
-        ./android/gradlew -v || true
-      shell: bash
+      - name: Ensure gradlew exists and is executable
+        shell: bash
+        run: |
+          if [ -f android/gradlew ]; then
+            echo "Found android/gradlew — making executable"
+            chmod +x android/gradlew || true
+          else
+            echo "::warning::android/gradlew not found. Listing repo root:"
+            ls -la || true
+            echo "Attempting to create wrapper (may fail if gradle not present)"
+            if [ -d android ]; then
+              pushd android
+              ./gradlew wrapper || true
+              popd
+            fi
+          fi
+          ls -la android || true
 
-    - name: Clean build (safe)
-      run: flutter clean || true
+      - name: Print Gradle / Java info
+        shell: bash
+        run: |
+          echo "JAVA_HOME=$JAVA_HOME"
+          java -version || true
+          ./android/gradlew -v || true
 
-    - name: Build APK (release) and save verbose logs
-      run: |
-        set -o pipefail
-        flutter build apk --release --split-per-abi -v 2>&1 | tee build_logs.txt
-        echo "::set-output name=build_exit::$?"
-      shell: bash
-      timeout-minutes: 40
+      - name: Flutter pub get
+        shell: bash
+        run: flutter pub get
 
-    - name: List build outputs (quick)
-      run: ls -la build/app/outputs || true
-      shell: bash
+      - name: Clean build (safe)
+        shell: bash
+        run: flutter clean || true
 
-    - name: Upload APK artifacts (if created)
-      if: always()
-      uses: actions/upload-artifact@v4
-      with:
-        name: visora-apks
-        path: build/app/outputs/flutter-apk/*.apk
+      - name: Build APK (release) and save verbose logs
+        shell: bash
+        run: |
+          set -o pipefail
+          mkdir -p .github/build-logs
+          # build with verbose and save combined output
+          flutter build apk --release --split-per-abi --verbose 2>&1 | tee build_logs.txt
+          echo "::set-output name=build_exit::$?"
+        timeout-minutes: 40
 
-    - name: Upload build logs (always)
-      if: always()
-      uses: actions/upload-artifact@v4
-      with:
-        name: visora-build-logs
-        path: build_logs.txt
+      - name: List build outputs (quick)
+        shell: bash
+        run: ls -la build/app/outputs || true
+
+      - name: Upload APK artifacts (if created)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: visora-apks
+          path: build/app/outputs/flutter-apk/*.apk
+
+      - name: Upload build logs (always)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: visora-build-logs
+          path: build_logs.txt
+
+      - name: Post job cleanup
+        if: always()
+        run: |
+          echo "Done"
