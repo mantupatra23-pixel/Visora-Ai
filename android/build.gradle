@@ -1,4 +1,4 @@
-// Top-level build file where you can add configuration options
+// Top-level build file where you can add configuration options common to all sub-projects/modules.
 
 buildscript {
     ext.kotlin_version = "1.9.25"
@@ -6,20 +6,17 @@ buildscript {
     repositories {
         google()
         mavenCentral()
-
-        // explicit fallback in case any artifact is missing
+        // explicit fallback in case any artifact resolution needs the direct Google maven URL
         maven { url "https://dl.google.com/dl/android/maven2/" }
         maven { url "https://repo.maven.apache.org/maven2/" }
     }
 
     dependencies {
-        // Use a compatible Android Gradle Plugin
-        classpath "com.android.tools.build:gradle:8.3.2"
-
-        // Kotlin Gradle plugin
+        // Keep AGP compatible with Gradle 7.x (we use gradle wrapper 7.6)
+        classpath "com.android.tools.build:gradle:7.4.2"
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
 
-        // NOTE: Do not place application dependencies here
+        // NOTE: Do not place application dependencies here; they belong in module build.gradle files
     }
 }
 
@@ -28,13 +25,13 @@ allprojects {
         google()
         mavenCentral()
 
-        // Flutter engine artifacts (kept as fallback)
+        // Flutter engine artifacts fallback
         maven { url "https://storage.googleapis.com/download.flutter.io" }
 
-        // jcenter kept as fallback (deprecated, but safe for missing libs)
+        // jcenter kept as fallback (deprecated but harmless)
         jcenter()
 
-        // explicit google maven fallback
+        // explicit google maven as extra fallback
         maven { url "https://dl.google.com/dl/android/maven2/" }
 
         // explicit maven central fallback
@@ -42,7 +39,7 @@ allprojects {
     }
 }
 
-// Optional: set root project build directory
+// Optional: set root project build directory (if you use custom layout)
 rootProject.buildDir = "../build"
 
 subprojects {
