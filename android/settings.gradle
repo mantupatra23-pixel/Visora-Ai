@@ -1,0 +1,37 @@
+// android/settings.gradle (Groovy)
+
+pluginManagement {
+    repositories {
+        google()
+        mavenCentral()
+        gradlePluginPortal()
+        // fallback to direct Google maven URL if needed
+        maven { url "https://dl.google.com/dl/android/maven2/" }
+    }
+}
+
+dependencyResolutionManagement {
+    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+    repositories {
+        google()
+        mavenCentral()
+        // Flutter engine artifacts fallback
+        maven { url "https://storage.googleapis.com/download.flutter.io" }
+        // explicit Google maven fallback
+        maven { url "https://dl.google.com/dl/android/maven2/" }
+        // keep jcenter as a harmless fallback (deprecated)
+        jcenter()
+    }
+}
+
+rootProject.name = "visora_ai"
+
+// include your app and any modules
+include ':app'
+// if you have other modules, include them here, e.g.:
+// include ':feature_module'
+
+// ensure gradle settings for subprojects (optional helpers)
+rootProject.children.each { project ->
+    // no-op, placeholder for custom logic if needed
+}
