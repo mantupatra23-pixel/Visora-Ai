@@ -1,3 +1,5 @@
+// android/app/build.gradle
+
 plugins {
     id 'com.android.application'
     id 'org.jetbrains.kotlin.android'
@@ -19,7 +21,7 @@ if (flutterRoot == null) {
 }
 
 if (flutterRoot == null) {
-    throw new GradleException("Flutter SDK not found. Set flutter.sdk in local.properties or FLUTTER_ROOT.")
+    throw new GradleException("Flutter SDK not found. Define location with flutter.sdk in the local.properties file or set the FLUTTER_ROOT environment variable.")
 }
 
 apply from: "$flutterRoot/packages/flutter_tools/gradle/flutter.gradle"
@@ -39,8 +41,12 @@ android {
 
     buildTypes {
         release {
+            // For CI/testing you can keep debug signing or provide your release keystore later
+            signingConfig signingConfigs.debug
             minifyEnabled false
             shrinkResources false
+            // If you want obfuscation later, enable proguard and provide rules
+            // proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
         debug {
             minifyEnabled false
@@ -58,10 +64,10 @@ android {
 }
 
 flutter {
-    source '../../.'
+    source '../../'
 }
 
 dependencies {
-    implementation "androidx.core:core-ktx:1.13.1"
+    implementation "androidx.core:core-ktx:1.13.0"
     implementation "androidx.multidex:multidex:2.0.1"
 }
