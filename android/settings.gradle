@@ -4,10 +4,10 @@ pluginManagement {
         mavenCentral()
         gradlePluginPortal()
 
-        // Flutter artifacts
+        // Flutter artifacts (CI friendly)
         maven { url "https://storage.googleapis.com/download.flutter.io" }
 
-        // CI fallback repos
+        // Extra fallback repos
         maven { url "https://maven.google.com" }
         maven { url "https://dl.google.com/dl/android/maven2" }
     }
@@ -22,7 +22,7 @@ dependencyResolutionManagement {
         // Flutter engine artifacts
         maven { url "https://storage.googleapis.com/download.flutter.io" }
 
-        // fallback repos
+        // Extra fallback repos
         maven { url "https://maven.google.com" }
         maven { url "https://dl.google.com/dl/android/maven2" }
     }
@@ -30,37 +30,33 @@ dependencyResolutionManagement {
 
 rootProject.name = "visora_ai"
 
-// --------------------------------------------------------
-// SAFE FLUTTER ROOT HANDLING (WORKS FOR MOBILE + PC + CI)
-// --------------------------------------------------------
+// ----------------------------
+// Load FLUTTER_ROOT for CI
+// ----------------------------
 import java.util.Properties
 
 def localProperties = new Properties()
-def localPropertiesFile = rootProject.file('local.properties')
+def localFile = new File(rootDir, "local.properties")
 
-// Read flutter.sdk normally on device/laptop
-if (localPropertiesFile.exists()) {
-    localPropertiesFile.withReader('UTF-8') { reader ->
+if (localFile.exists()) {
+    localFile.withReader("UTF-8") { reader ->
         localProperties.load(reader)
     }
 }
 
-def flutterRoot = null
-
-// 1) First check: local.properties (mobile/laptop)
-flutterRoot = localProperties.getProperty('flutter.sdk')
-
-// 2) Second check: environment variable FLUTTER_ROOT (GitHub Actions)
+def flutterRoot = System.getenv("FLUTTER_ROOT")
 if (flutterRoot == null || flutterRoot.trim().isEmpty()) {
-    flutterRoot = System.getenv("FLUTTER_ROOT")
+    flutterRoot = localProperties.getProperty("flutter.sdk")
 }
 
-// 3) If Flutter still missing → DO NOT THROW ERROR ⇒ allow CI to continue
 if (flutterRoot == null || flutterRoot.trim().isEmpty()) {
-    println("WARNING: Flutter SDK not found via settings.gradle. Relying on GitHub Action setup.")
-} else {
-    apply from: "${flutterRoot}/packages/flutter_tools/gradle/app_plugin_loader.gradle"
+    throw new GradleException(
+        "Flutter SDK not found. Set FLUTTER_ROOT env or flutter.sdk in local.properties."
+    )
 }
 
-// Include main module
+// Apply Flutter gradle
+apply from: "${flutterRoot}/packages/flutter_tools/gradle/flutter.gradle"
+
+// Include app module
 include(":app")
