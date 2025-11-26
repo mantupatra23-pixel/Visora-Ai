@@ -1,15 +1,11 @@
-// android/settings.gradle (final)
-
 pluginManagement {
     repositories {
         google()
         mavenCentral()
         gradlePluginPortal()
+
         // Flutter artifacts
-        maven { url "https://storage.googleapis.com" }
-        // Extra fallback repos (CI friendly)
-        maven { url "https://maven.google.com" }
-        maven { url "https://dl.google.com/dl/android/maven2/" }
+        maven { url "https://storage.googleapis.com/download.flutter.io" }
     }
 }
 
@@ -18,40 +14,25 @@ dependencyResolutionManagement {
     repositories {
         google()
         mavenCentral()
-        // Flutter engine artifacts (kept as first fallback)
-        maven { url "https://storage.googleapis.com" }
-        // Extra fallback repos
-        maven { url "https://maven.google.com" }
-        maven { url "https://dl.google.com/dl/android/maven2/" }
-        // keep jcenter() as harmless fallback if needed
-        jcenter()
+        maven { url "https://storage.googleapis.com/download.flutter.io" }
     }
 }
 
 rootProject.name = "visora_ai"
 
-// IMPORTANT:
-// Use FLUTTER_ROOT or local.properties to locate flutter.gradle in CI environments.
-// Remove any apply from: file("../flutter.gradle") lines that assume flutter.gradle is in repo root.
-import java.util.Properties
+// Flutter SDK path automatically detected via .flutter-plugins-dependencies
+def flutterProjectRoot = rootDir.getAbsoluteFile()
 
-def localProperties = new Properties()
-def localPropertiesFile = rootProject.file('local.properties')
-if (localPropertiesFile.exists()) {
-    localPropertiesFile.withReader('UTF-8') { reader ->
-        localProperties.load(reader)
-    }
+def flutterSdkPath = new File(flutterProjectRoot, ".flutter-sdk").exists()
+        ? flutterProjectRoot.toPath().resolve(".flutter-sdk").toString()
+        : System.getenv("FLUTTER_SDK")
+
+if (flutterSdkPath == null || flutterSdkPath.trim().isEmpty()) {
+    throw new GradleException("Flutter SDK not found in CI. Please ensure flutter-action installs it.")
 }
 
-def flutterRoot = localProperties.getProperty('flutter.sdk') ?: System.getenv('FLUTTER_ROOT')
-if (flutterRoot == null) {
-    // fail early with clear message in CI logs
-    throw new GradleException("Flutter SDK not found. Add 'flutter.sdk' to local.properties or set FLUTTER_ROOT environment variable in CI.")
-}
+// Apply flutter toolchain
+apply from: "${flutterSdkPath}/packages/flutter_tools/gradle/flutter.gradle"
 
-// Apply Flutter gradle from the SDK (this is correct for CI actions that install Flutter)
-apply from: "${flutterRoot}/packages/flutter_tools/gradle/flutter.gradle"
-
-// include app module(s)
-include ':app'
-// include ':feature_module' // add if you have other modules
+// Include app module
+include ":app"
