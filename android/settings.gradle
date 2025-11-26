@@ -1,12 +1,15 @@
 pluginManagement {
     repositories {
-        gradlePluginPortal()
         google()
         mavenCentral()
+        gradlePluginPortal()
+
+        // Flutter artifacts (CI friendly)
         maven { url "https://storage.googleapis.com/download.flutter.io" }
-    }
-    resolutionStrategy {
-        // keep defaults
+
+        // Extra fallback
+        maven { url "https://maven.google.com" }
+        maven { url "https://dl.google.com/dl/android/maven2" }
     }
 }
 
@@ -15,20 +18,17 @@ dependencyResolutionManagement {
     repositories {
         google()
         mavenCentral()
-        maven { url 'https://storage.googleapis.com/download.flutter.io' }
-        maven { url 'https://dl.google.com/dl/android/maven2/' }
+
+        // Flutter engine artifacts
+        maven { url "https://storage.googleapis.com/download.flutter.io" }
+
+        // Fallback
+        maven { url "https://maven.google.com" }
+        maven { url "https://dl.google.com/dl/android/maven2" }
     }
 }
 
 rootProject.name = "visora_ai"
 
-// Read local.properties (CI-friendly)
-import java.util.Properties
-def localProperties = new Properties()
-def localPropsFile = rootProject.file('local.properties')
-if (localPropsFile.exists()) {
-    localPropsFile.withReader('UTF-8') { r -> localProperties.load(r) }
-}
-
-// If you need flutterRoot fallback, keep localProperties usage in build scripts
-include ':app'
+// Apply app module
+include(":app")
