@@ -21,7 +21,7 @@ class _RenderSettingsScreenState extends State<RenderSettingsScreen> {
   String output = 'Horizontal';
   bool ultra = false;
   bool _isRendering = false;
-  final api = VisoraApi(base: backendBase);
+  final api = ApiService(baseUrl: backendBase);
 
   Future<void> _startRender(BuildContext ctx) async {
     final st = Provider.of<AppState>(ctx, listen: false);

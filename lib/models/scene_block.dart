@@ -1,10 +1,30 @@
+// lib/models/scene_block.dart
 class SceneBlock {
-  String name;
   String environment;
   String camera;
   String motion;
-  SceneBlock({required this.name, this.environment = 'Room', this.camera = 'Mid-shot', this.motion = 'Smooth'});
+  String name;
 
-  Map<String, dynamic> toJson() => {'name': name, 'env': environment, 'camera': camera, 'motion': motion};
-  factory SceneBlock.fromJson(Map<String, dynamic> j) => SceneBlock(name: j['name'] ?? 'Scene', environment: j['env'] ?? 'Room', camera: j['camera'] ?? 'Mid-shot', motion: j['motion'] ?? 'Smooth');
+  SceneBlock({
+    required this.name,
+    this.environment = 'room',
+    this.camera = 'wide',
+    this.motion = 'static',
+  });
+
+  factory SceneBlock.fromJson(Map<String, dynamic> j) {
+    return SceneBlock(
+      name: j['name'] ?? '',
+      environment: j['environment'] ?? 'room',
+      camera: j['camera'] ?? 'wide',
+      motion: j['motion'] ?? 'static',
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+        'name': name,
+        'environment': environment,
+        'camera': camera,
+        'motion': motion,
+      };
 }
