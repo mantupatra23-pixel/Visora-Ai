@@ -1,24 +1,15 @@
-
-    <uses-permission 
-    android:name="android.permission.INTERNET"/> 
-    <uses-permission 
-    android:name="android.permission.READ_EXTERNAL_STORAGE"/> 
-    <uses-permission 
-    android:name="android.permission.WRITE_EXTERNAL_STORAGE"/> 
-    <uses-permission 
-    android:name="android.permission.MANAGE_EXTERNAL_STORAGE"/> 
-    <uses-permission 
-    android:name="android.permission.CAMERA"/> 
-    <uses-permission 
-    android:name="android.permission.RECORD_AUDIO"/>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.visora.ai">
 
-    <!-- Required permissions -->
-    <uses-permission android:name="android.permission.INTERNET"/>
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
-    <uses-permission android:name="android.permission.WAKE_LOCK"/>
-    <!-- Add any runtime permissions as needed (READ_EXTERNAL_STORAGE etc) -->
+    <!-- Permissions -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+
+    <!-- Add more permissions if required -->
 
     <application
         android:name="${applicationName}"
@@ -28,19 +19,20 @@
         android:allowBackup="true"
         android:theme="@style/LaunchTheme">
 
-        <!-- Flutter entry activity -->
         <activity
             android:name=".MainActivity"
             android:exported="true"
             android:launchMode="singleTop"
-            android:theme="@style/LaunchTheme"
-            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode">
+            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|screenLayout|density|uiMode"
+            android:theme="@style/LaunchTheme">
+
             <intent-filter>
-                <action android:name="android.intent.action.MAIN"/>
-                <category android:name="android.intent.category.LAUNCHER"/>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+
         </activity>
 
-        <!-- If using Firebase messaging, add the service entries as required by plugin -->
     </application>
+
 </manifest>
