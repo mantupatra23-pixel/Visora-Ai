@@ -5,6 +5,7 @@ import '../models/character.dart';
 
 class CharactersScreen extends StatefulWidget {
   const CharactersScreen({super.key});
+
   @override
   State<CharactersScreen> createState() => _CharactersScreenState();
 }
@@ -13,40 +14,68 @@ class _CharactersScreenState extends State<CharactersScreen> {
   @override
   Widget build(BuildContext context) {
     final st = Provider.of<AppState>(context);
-    final list = st.characters.isEmpty ? [Character(name: 'Hero'), Character(name: 'Friend')] : st.characters;
+    final chars = st.characters;
+
     return Scaffold(
-      appBar: AppBar(title: const Text('Characters')),
+      appBar: AppBar(title: const Text("Characters")),
       body: ListView.builder(
-        padding: const EdgeInsets.all(12),
-        itemCount: list.length + 1,
+        itemCount: chars.length,
         itemBuilder: (context, idx) {
-          if (idx == list.length) {
-            return ElevatedButton.icon(icon: const Icon(Icons.add), label: const Text('Add New Character'), onPressed: () {
-              setState(() {
-                list.add(Character(name: 'New ${list.length+1}'));
-                st.setCharacters(list);
-              });
-            });
-          }
-          final c = list[idx];
+          final c = chars[idx];
           return Card(
-            child: Padding(
-              padding: const EdgeInsets.all(12),
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                TextFormField(initialValue: c.name, decoration: const InputDecoration(labelText: 'Name'), onChanged: (v) { c.name = v; st.setCharacters(list); }),
-                const SizedBox(height: 8),
-                Row(children: [
-                  Expanded(child: DropdownButtonFormField(value: c.voice, items: ['Neutral','Male','Female','Kid','Elder'].map((s)=>DropdownMenuItem(value:s,child:Text(s))).toList(), onChanged: (v){c.voice=v!;st.setCharacters(list);} , decoration: const InputDecoration(labelText: 'Voice'))),
-                  const SizedBox(width: 8),
-                  Expanded(child: DropdownButtonFormField(value: c.outfit, items: ['Default','Casual','Formal','Sport'].map((s)=>DropdownMenuItem(value:s,child:Text(s))).toList(), onChanged: (v){c.outfit=v!;st.setCharacters(list);} , decoration: const InputDecoration(labelText: 'Outfit'))),
-                ]),
-                Row(mainAxisAlignment: MainAxisAlignment.end, children: [TextButton(onPressed: (){ setState((){ list.removeAt(idx); st.setCharacters(list); }); }, child: const Text('Delete'))])
-              ]),
+            child: ListTile(
+              title: Text(c.name),
+              subtitle: Text("Voice: ${c.voice}"),
+              trailing: PopupMenuButton<String>(
+                onSelected: (v) {
+                  if (v == "delete") {
+                    setState(() {
+                      chars.removeAt(idx);
+                      st.setCharacters(chars);
+                    });
+                  }
+                  if (v == "duplicate") {
+                    final dup = CharacterModel(
+                      id: DateTime.now().millisecondsSinceEpoch.toString(),
+                      name: c.name + "_copy",
+                      voice: c.voice,
+                      outfit: c.outfit,
+                    );
+                    setState(() {
+                      chars.add(dup);
+                      st.setCharacters(chars);
+                    });
+                  }
+                },
+                itemBuilder: (context) =>
+                    const [PopupMenuItem(value: "delete", child: Text("Delete")),
+                      PopupMenuItem(value: "duplicate", child: Text("Duplicate"))],
+              ),
             ),
           );
         },
       ),
-      bottomNavigationBar: Padding(padding: const EdgeInsets.all(8), child: ElevatedButton(child: const Text('Next: Scene Builder'), onPressed: () => Navigator.pushNamed(context, '/scenes'))),
+      floatingActionButton: FloatingActionButton(
+        child: const Icon(Icons.add),
+        onPressed: () {
+          final newChar = CharacterModel(
+            id: DateTime.now().millisecondsSinceEpoch.toString(),
+            name: "New Character",
+            voice: "default",
+            outfit: "default",
+          );
+
+          chars.add(newChar);
+          st.setCharacters(chars);
+        },
+      ),
+      bottomNavigationBar: Padding(
+        padding: const EdgeInsets.all(16),
+        child: ElevatedButton(
+          child: const Text("Continue"),
+          onPressed: () => Navigator.pushNamed(context, "/scenes"),
+        ),
+      ),
     );
   }
 }
