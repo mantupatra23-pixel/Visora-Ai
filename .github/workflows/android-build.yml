@@ -1,4 +1,4 @@
-name: Android Release Build
+name: Android Release Build (V2 embedding safe)
 
 on:
   push:
@@ -14,6 +14,8 @@ jobs:
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up Java 17
         uses: actions/setup-java@v4
@@ -21,40 +23,45 @@ jobs:
           distribution: temurin
           java-version: 17
 
-      - name: Setup Flutter
+      - name: Setup Flutter (stable) — no action cache
         uses: subosito/flutter-action@v2
         with:
           channel: stable
-          cache: false   # <-- IMPORTANT: cache disabled to remove old V1 embedding
+          cache: false    # <-- important: disable action cache to avoid stale artifacts
 
-      - name: Flutter version
+      - name: Flutter --version
         run: flutter --version
 
       - name: Flutter doctor
         run: flutter doctor -v
 
-      - name: Ensure gradlew exists & executable
+      - name: Show repo root & android listing
         run: |
-          if [ -f "android/gradlew" ]; then
-            chmod +x android/gradlew
+          echo "PWD: $(pwd)"
+          ls -la
+          echo "List android folder:"
+          ls -la android || true
+        shell: bash
+
+      - name: Ensure android folder exists (create if missing)
+        run: |
+          if [ ! -d "android" ]; then
+            echo "android folder missing — creating android platform via flutter create"
+            flutter create --platforms=android .
           else
-            echo "⚠️ gradlew missing! Recreating..."
-            cd android
-            flutter create .
-            cd ..
-            chmod +x android/gradlew || true
+            echo "android exists"
           fi
         shell: bash
 
-      - name: Flutter pub get
-        run: flutter pub get
-
-      - name: Clean build dirs
+      - name: Ensure gradlew is executable if present
         run: |
-          flutter clean
-          rm -rf android/.gradle
-          rm -rf android/build
-          rm -rf build
+          if [ -f "android/gradlew" ]; then
+            chmod +x android/gradlew || true
+            echo "gradlew set executable"
+          else
+            echo "android/gradlew not found"
+            ls -la android || true
+          fi
         shell: bash
 
       - name: Print Java & Gradle info
@@ -66,14 +73,46 @@ jobs:
           fi
         shell: bash
 
-      - name: Build APK (release)
+      - name: Clean build (safe)
+        run: |
+          flutter clean || true
+          rm -rf android/.gradle || true
+          rm -rf build || true
+        shell: bash
+
+      - name: Flutter pub get
+        run: flutter pub get
+        shell: bash
+
+      - name: Pre-build checks (list plugin / embedding)
+        run: |
+          echo "Searching for legacy v1 embedding markers (should be none)..."
+          grep -R --line-number "io.flutter.app" android || true
+          grep -R --line-number "registerWith" android || true
+          grep -R --line-number "io.flutter.plugin" android || true
+        shell: bash
+
+      - name: Build APK (release) — verbose
         run: |
           set -o pipefail
-          flutter build apk --release --split-per-abi | tee build_logs.txt
+          flutter build apk --release --split-per-abi --verbose 2>&1 | tee build_logs.txt
         shell: bash
         timeout-minutes: 40
 
-      - name: Upload APK artifacts
+      - name: Show build logs tail
+        if: always()
+        run: tail -n 200 build_logs.txt || true
+        shell: bash
+
+      - name: List build outputs (quick)
+        if: always()
+        run: |
+          echo "list build outputs:"
+          ls -la build/app/outputs || true
+          find build/app -maxdepth 4 -type f -name "*.apk" -o -name "*.aab" || true
+        shell: bash
+
+      - name: Upload APK artifacts (if created)
         if: always()
         uses: actions/upload-artifact@v4
         with:
@@ -86,3 +125,6 @@ jobs:
         with:
           name: visora-build-logs
           path: build_logs.txt
+
+      - name: Complete
+        run: echo "Done"
