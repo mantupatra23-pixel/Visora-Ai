@@ -1,7 +1,6 @@
-package com.visora.ai
+package com.visora.ai;
 
-import io.flutter.embedding.android.FlutterActivity
+import io.flutter.embedding.android.FlutterActivity;
 
-class MainActivity: FlutterActivity() {
-    // default empty - Flutter handles entry
+public class MainActivity extends FlutterActivity {
 }
