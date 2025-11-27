@@ -1,17 +1,33 @@
+// lib/state/app_state.dart
 import 'package:flutter/foundation.dart';
-import '../models/character.dart';
-import '../models/scene_block.dart';
-import '../models/render_job.dart';
+import '../services/api_service.dart';
 
 class AppState extends ChangeNotifier {
-  String script = '';
-  List<Character> characters = [];
-  List<SceneBlock> scenes = [];
-  RenderJob? currentJob;
+  final ApiService apiService;
 
-  void updateScript(String s) { script = s; notifyListeners(); }
-  void setCharacters(List<Character> c) { characters = c; notifyListeners(); }
-  void setScenes(List<SceneBlock> s) { scenes = s; notifyListeners(); }
-  void setJob(RenderJob job) { currentJob = job; notifyListeners(); }
-  void clearJob() { currentJob = null; notifyListeners(); }
+  // Allow injecting ApiService (useful for tests or different envs)
+  AppState({ApiService? apiService})
+      : apiService = apiService ?? ApiService(baseUrl: 'https://visora-backend-v2.onrender.com');
+
+  // Example state fields
+  bool _isLoading = false;
+  bool get isLoading => _isLoading;
+
+  void setLoading(bool v) {
+    _isLoading = v;
+    notifyListeners();
+  }
+
+  // Example function that calls backend
+  Future<void> pingServer() async {
+    try {
+      setLoading(true);
+      final resp = await apiService.get('/health'); // adjust path as your backend exposes
+      // handle resp (status, body)
+    } catch (e) {
+      // handle error
+    } finally {
+      setLoading(false);
+    }
+  }
 }
