@@ -4,7 +4,7 @@ pluginManagement {
         mavenCentral()
         gradlePluginPortal()
 
-        // Flutter artifacts (CI friendly)
+        // Flutter artifacts
         maven { url "https://storage.googleapis.com/download.flutter.io" }
 
         // Extra fallback
@@ -22,7 +22,7 @@ dependencyResolutionManagement {
         // Flutter engine artifacts
         maven { url "https://storage.googleapis.com/download.flutter.io" }
 
-        // Fallback
+        // fallback repos
         maven { url "https://maven.google.com" }
         maven { url "https://dl.google.com/dl/android/maven2" }
     }
@@ -30,5 +30,28 @@ dependencyResolutionManagement {
 
 rootProject.name = "visora_ai"
 
-// Apply app module
+// Load FLUTTER_ROOT
+import java.util.Properties
+
+def localProperties = new Properties()
+def localPropertiesFile = new File(rootDir, "local.properties")
+
+if (localPropertiesFile.exists()) {
+    localPropertiesFile.withReader("UTF-8") { reader ->
+        localProperties.load(reader)
+    }
+}
+
+def flutterRoot = System.getenv("FLUTTER_ROOT")
+if (flutterRoot == null || flutterRoot.trim().isEmpty()) {
+    flutterRoot = localProperties.getProperty("flutter.sdk")
+}
+
+if (flutterRoot == null || flutterRoot.trim().isEmpty()) {
+    throw new GradleException("Flutter SDK not found. Set FLUTTER_ROOT or flutter.sdk in local.properties.")
+}
+
+apply from: "${flutterRoot}/packages/flutter_tools/gradle/app_plugin_loader.gradle"
+
+// include the app module
 include(":app")
