@@ -51,7 +51,7 @@ class AppTheme {
     final color = brightness == Brightness.dark ? Colors.white : Colors.black87;
 
     return base.copyWith(
-      // headline6 -> titleLarge
+      // titleLarge -> titleLarge
       titleLarge: base.titleLarge?.copyWith(
             color: color,
             fontSize: 20,
@@ -59,14 +59,14 @@ class AppTheme {
           ) ??
           TextStyle(color: color, fontSize: 20, fontWeight: FontWeight.w700),
 
-      // bodyText2 -> bodyMedium
+      // bodyMedium -> bodyMedium
       bodyMedium: base.bodyMedium?.copyWith(
             color: color,
             fontSize: 14,
           ) ??
           TextStyle(color: color, fontSize: 14),
 
-      // subtitle1 -> titleMedium
+      // titleMedium -> titleMedium
       titleMedium: base.titleMedium?.copyWith(
             color: color,
             fontSize: 16,
@@ -74,7 +74,7 @@ class AppTheme {
           ) ??
           TextStyle(color: color, fontSize: 16, fontWeight: FontWeight.w600),
 
-      // caption -> bodySmall
+      // bodySmall -> bodySmall
       bodySmall: base.bodySmall?.copyWith(
             color: color.withOpacity(0.8),
             fontSize: 12,
