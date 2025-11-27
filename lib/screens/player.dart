@@ -1,55 +1,19 @@
 import 'package:flutter/material.dart';
-import 'package:chewie/chewie.dart';
-import 'package:video_player/video_player.dart';
-import '../models/video_model.dart';
 
-class PlayerScreen extends StatefulWidget {
-  final VideoModel video;
-  const PlayerScreen({Key? key, required this.video}) : super(key: key);
-
-  @override
-  _PlayerScreenState createState() => _PlayerScreenState();
-}
-
-class _PlayerScreenState extends State<PlayerScreen> {
-  VideoPlayerController? _vp;
-  ChewieController? _chewie;
-
-  @override
-  void initState() {
-    super.initState();
-    _vp = VideoPlayerController.network(widget.video.videoUrl)..initialize().then((_) {
-      _chewie = ChewieController(videoPlayerController: _vp!, autoPlay: false, looping: false);
-      setState(() {});
-    });
-  }
-
-  @override
-  void dispose() {
-    _chewie?.dispose();
-    _vp?.dispose();
-    super.dispose();
-  }
-
+class VideoPlayerScreen extends StatelessWidget {
+  const VideoPlayerScreen({super.key});
   @override
   Widget build(BuildContext context) {
+    // placeholder; integrate video_player or chewie for production
     return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.video.title),
-      ),
-      body: Column(
-        children: [
-          if (_chewie != null)
-            AspectRatio(aspectRatio: _vp!.value.aspectRatio, child: Chewie(controller: _chewie!))
-          else
-            Container(height: 250, child: Center(child: CircularProgressIndicator())),
-          ListTile(title: Text('Status: ${widget.video.status}'), subtitle: Text(widget.video.createdAt.toString())),
-          Padding(
-            padding: EdgeInsets.all(12),
-            child: ElevatedButton.icon(onPressed: () {}, icon: Icon(Icons.download), label: Text('Download')),
-          )
-        ],
-      ),
+      appBar: AppBar(title: const Text('Player')),
+      body: Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
+        Container(width: 320, height: 180, color: Colors.black12, child: const Center(child: Icon(Icons.play_circle_outline, size: 64))),
+        const SizedBox(height: 12),
+        ElevatedButton.icon(icon: const Icon(Icons.download), label: const Text('Download MP4'), onPressed: () { ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Download stub'))); }),
+        const SizedBox(height: 8),
+        ElevatedButton.icon(icon: const Icon(Icons.share), label: const Text('Share'), onPressed: () {}),
+      ])),
     );
   }
 }
