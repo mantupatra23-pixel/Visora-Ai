@@ -1,29 +1,36 @@
+// lib/models/render_job.dart
 class RenderJob {
-  String id;        // required in UI
-  String jobId;     // backend ID
-  String status;
-  int progress;
+  final String id;
+  final String status;
+  final int progress;
 
   RenderJob({
     required this.id,
-    required this.jobId,
     required this.status,
     required this.progress,
   });
 
   factory RenderJob.fromJson(Map<String, dynamic> json) {
+    // backend might use 'jobId' or 'id' — handle both
+    final idValue = json['jobId'] ?? json['id'] ?? '';
+    final statusValue = json['status'] ?? 'pending';
+    final progressValue = (json['progress'] is int)
+        ? json['progress'] as int
+        : int.tryParse('${json['progress'] ?? 0}') ?? 0;
+
     return RenderJob(
-      id: json["_id"] ?? json["id"] ?? "",
-      jobId: json["jobId"] ?? "",
-      status: json["status"] ?? "pending",
-      progress: json["progress"] ?? 0,
+      id: idValue.toString(),
+      status: statusValue.toString(),
+      progress: progressValue,
     );
   }
 
   Map<String, dynamic> toJson() => {
-        "id": id,
-        "jobId": jobId,
-        "status": status,
-        "progress": progress,
+        'id': id,
+        'status': status,
+        'progress': progress,
       };
+
+  @override
+  String toString() => 'RenderJob(id: $id, status: $status, progress: $progress)';
 }
