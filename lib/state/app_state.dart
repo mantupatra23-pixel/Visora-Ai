@@ -1,79 +1,72 @@
 import 'package:flutter/foundation.dart';
 import '../services/api_service.dart';
-import '../models/render_job.dart';
 import '../models/scene.dart';
 import '../models/character.dart';
+import '../models/render_job.dart';
 
 class AppState extends ChangeNotifier {
-  // -----------------------------------------------------------
-  // Backend API service instance
-  // -----------------------------------------------------------
   final ApiService api = ApiService(baseUrl: "https://visora-backend-v2.onrender.com");
 
-  // -----------------------------------------------------------
-  // Project data
-  // -----------------------------------------------------------
-  List<SceneModel> scenes = [];
-  List<CharacterModel> characters = [];
+  // Script text
+  String script = "";
 
-  // -----------------------------------------------------------
-  // Render job
-  // -----------------------------------------------------------
-  RenderJob? currentJob;
-
-  // -----------------------------------------------------------
-  // Set Scenes
-  // -----------------------------------------------------------
-  void setScenes(List<SceneModel> list) {
-    scenes = list;
+  void setScript(String value) {
+    script = value;
     notifyListeners();
   }
 
-  // -----------------------------------------------------------
-  // Add Character
-  // -----------------------------------------------------------
+  // Characters
+  List<CharacterModel> characters = [];
+
+  void setCharacters(List<CharacterModel> list) {
+    characters = list;
+    notifyListeners();
+  }
+
   void addCharacter(CharacterModel c) {
     characters.add(c);
     notifyListeners();
   }
 
-  // -----------------------------------------------------------
-  // Set Job
-  // -----------------------------------------------------------
+  // Scenes
+  List<SceneModel> scenes = [];
+
+  void setScenes(List<SceneModel> list) {
+    scenes = list;
+    notifyListeners();
+  }
+
+  // Render Job
+  RenderJob? currentJob;
+
   void setJob(RenderJob job) {
     currentJob = job;
     notifyListeners();
   }
 
-  // -----------------------------------------------------------
-  // Clear job
-  // -----------------------------------------------------------
   void clearJob() {
     currentJob = null;
     notifyListeners();
   }
 
-  // -----------------------------------------------------------
   // Start Render Job
-  // -----------------------------------------------------------
   Future<void> startRenderJob() async {
     try {
-      final data = {
+      final body = {
+        "script": script,
         "scenes": scenes.map((s) => s.toJson()).toList(),
-        "characters": characters.map((c) => c.toJson()).toList(),
+        "characters": characters.map((c) => c.toJson()).toList()
       };
 
-      final result = await api.post("/render/create", data);
-
+      final result = await api.post("/render/create", body);
       setJob(RenderJob.fromJson(result));
+
     } catch (e) {
       debugPrint("Render job error: $e");
     }
   }
 
-  // -----------------------------------------------------------
-  // Poll job status
-  // -----------------------------------------------------------
+  // Poll Status
   Future<void> pollRenderStatus() async {
     if (currentJob == null) return;
 
