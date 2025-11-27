@@ -1,3 +1,4 @@
+// lib/state/app_state.dart
 import 'package:flutter/foundation.dart';
 import '../services/api_service.dart';
 import '../models/scene.dart';
@@ -5,21 +6,23 @@ import '../models/character.dart';
 import '../models/render_job.dart';
 
 class AppState extends ChangeNotifier {
-  final ApiService api = ApiService(baseUrl: "https://visora-backend-v2.onrender.com");
+  // ---- API ----
+  final ApiService api =
+      ApiService(baseUrl: 'https://visora-backend-v2.onrender.com');
 
-  // Script text
-  String script = "";
+  // ---- Script text ----
+  String script = '';
 
   void setScript(String value) {
     script = value;
     notifyListeners();
   }
 
-  // Characters
+  // ---- Characters ----
   List<CharacterModel> characters = [];
 
   void setCharacters(List<CharacterModel> list) {
-    characters = list;
+    characters = List<CharacterModel>.from(list);
     notifyListeners();
   }
 
@@ -28,15 +31,34 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
-  // Scenes
+  void removeCharacterAt(int index) {
+    if (index >= 0 && index < characters.length) {
+      characters.removeAt(index);
+      notifyListeners();
+    }
+  }
+
+  // ---- Scenes ----
   List<SceneModel> scenes = [];
 
   void setScenes(List<SceneModel> list) {
-    scenes = list;
+    scenes = List<SceneModel>.from(list);
     notifyListeners();
   }
 
-  // Render Job
+  void addScene(SceneModel s) {
+    scenes.add(s);
+    notifyListeners();
+  }
+
+  void removeSceneAt(int index) {
+    if (index >= 0 && index < scenes.length) {
+      scenes.removeAt(index);
+      notifyListeners();
+    }
+  }
+
+  // ---- Render Job ----
   RenderJob? currentJob;
 
   void setJob(RenderJob job) {
@@ -49,33 +71,55 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
-  // Start Render Job
+  // ---- Start Render Job (POST to backend) ----
   Future<void> startRenderJob() async {
     try {
-      final body = {
-        "script": script,
-        "scenes": scenes.map((s) => s.toJson()).toList(),
-        "characters": characters.map((c) => c.toJson()).toList()
+      // Build request body
+      final body = <String, dynamic>{
+        'script': script,
+        'scenes': scenes.map((s) => s.toJson()).toList(),
+        'characters': characters.map((c) => c.toJson()).toList(),
       };
 
-      final result = await api.post("/render/create", body);
-      setJob(RenderJob.fromJson(result));
+      // Call backend endpoint (adjust path if endpoint is different)
+      final result = await api.post('/render/create', body);
 
-    } catch (e) {
-      debugPrint("Render job error: $e");
+      // Expect result to be a JSON map for created job
+      if (result is Map<String, dynamic>) {
+        setJob(RenderJob.fromJson(result));
+      } else {
+        // If backend wraps data under a field e.g. {"data": {...}}
+        if (result is Map && result['data'] is Map<String, dynamic>) {
+          setJob(RenderJob.fromJson(result['data'] as Map<String, dynamic>));
+        } else {
+          debugPrint('Unexpected response from startRenderJob: $result');
+        }
+      }
+    } catch (e, st) {
+      debugPrint('Render job error: $e\n$st');
     }
   }
 
-  // Poll Status
+  // ---- Poll render status (GET) ----
   Future<void> pollRenderStatus() async {
     if (currentJob == null) return;
 
     try {
-      final result = await api.get("/render/status?jobId=${currentJob!.jobId}");
-      final updated = RenderJob.fromJson(result);
-      setJob(updated);
-    } catch (e) {
-      debugPrint("Status poll error: $e");
+      // Adjust path to match your backend route (example used /render/status/:id)
+      final path = '/render/status/${currentJob!.id}';
+      final result = await api.get(path);
+
+      if (result is Map<String, dynamic>) {
+        final updated = RenderJob.fromJson(result);
+        setJob(updated);
+      } else if (result is Map && result['data'] is Map<String, dynamic>) {
+        final updated = RenderJob.fromJson(result['data'] as Map<String, dynamic>);
+        setJob(updated);
+      } else {
+        debugPrint('Unexpected poll response: $result');
+      }
+    } catch (e, st) {
+      debugPrint('Status poll error: $e\n$st');
     }
   }
 }

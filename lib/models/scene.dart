@@ -1,14 +1,25 @@
 class SceneModel {
-  String camera;
   String environment;
+  String camera;
+  String motion;
 
   SceneModel({
-    required this.camera,
     required this.environment,
+    required this.camera,
+    required this.motion,
   });
 
   Map<String, dynamic> toJson() => {
-        "camera": camera,
         "environment": environment,
+        "camera": camera,
+        "motion": motion,
       };
+
+  factory SceneModel.fromJson(Map<String, dynamic> json) {
+    return SceneModel(
+      environment: json["environment"] ?? "",
+      camera: json["camera"] ?? "",
+      motion: json["motion"] ?? "",
+    );
+  }
 }
