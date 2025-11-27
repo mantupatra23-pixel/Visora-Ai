@@ -6,11 +6,10 @@ import '../models/character.dart';
 import '../models/render_job.dart';
 
 class AppState extends ChangeNotifier {
-  // ---- API ----
-  final ApiService api =
-      ApiService(baseUrl: 'https://visora-backend-v2.onrender.com');
+  // Provide your backend base URL here or keep the one you used.
+  final ApiService api = ApiService(baseUrl: 'https://visora-backend-v2.onrender.com');
 
-  // ---- Script text ----
+  // Script text
   String script = '';
 
   void setScript(String value) {
@@ -18,11 +17,24 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
-  // ---- Characters ----
+  // Characters
   List<CharacterModel> characters = [];
 
-  void setCharacters(List<CharacterModel> list) {
-    characters = List<CharacterModel>.from(list);
+  /// Accepts List<dynamic> and converts to List<CharacterModel>
+  void setCharacters(List<dynamic> list) {
+    characters = list.map<CharacterModel>((e) {
+      if (e is CharacterModel) return e;
+      if (e is Map) {
+        return CharacterModel.fromJson(Map<String, dynamic>.from(e));
+      }
+      // Fallback: try to cast or create a minimal model
+      try {
+        final m = Map<String, dynamic>.from(e as Map);
+        return CharacterModel.fromJson(m);
+      } catch (_) {
+        return CharacterModel(id: '', name: '', voice: 'default', outfit: 'default');
+      }
+    }).toList();
     notifyListeners();
   }
 
@@ -31,18 +43,11 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
-  void removeCharacterAt(int index) {
-    if (index >= 0 && index < characters.length) {
-      characters.removeAt(index);
-      notifyListeners();
-    }
-  }
-
-  // ---- Scenes ----
+  // Scenes
   List<SceneModel> scenes = [];
 
   void setScenes(List<SceneModel> list) {
-    scenes = List<SceneModel>.from(list);
+    scenes = list;
     notifyListeners();
   }
 
@@ -51,14 +56,7 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
-  void removeSceneAt(int index) {
-    if (index >= 0 && index < scenes.length) {
-      scenes.removeAt(index);
-      notifyListeners();
-    }
-  }
-
-  // ---- Render Job ----
+  // Render Job
   RenderJob? currentJob;
 
   void setJob(RenderJob job) {
@@ -71,55 +69,32 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
-  // ---- Start Render Job (POST to backend) ----
+  // Start Render Job — creates job on backend and stores it
   Future<void> startRenderJob() async {
     try {
-      // Build request body
-      final body = <String, dynamic>{
+      final body = {
         'script': script,
         'scenes': scenes.map((s) => s.toJson()).toList(),
         'characters': characters.map((c) => c.toJson()).toList(),
       };
 
-      // Call backend endpoint (adjust path if endpoint is different)
       final result = await api.post('/render/create', body);
-
-      // Expect result to be a JSON map for created job
-      if (result is Map<String, dynamic>) {
-        setJob(RenderJob.fromJson(result));
-      } else {
-        // If backend wraps data under a field e.g. {"data": {...}}
-        if (result is Map && result['data'] is Map<String, dynamic>) {
-          setJob(RenderJob.fromJson(result['data'] as Map<String, dynamic>));
-        } else {
-          debugPrint('Unexpected response from startRenderJob: $result');
-        }
-      }
-    } catch (e, st) {
-      debugPrint('Render job error: $e\n$st');
+      // assume result is a json map for the job
+      setJob(RenderJob.fromJson(result));
+    } catch (e) {
+      debugPrint('Render job error: $e');
     }
   }
 
-  // ---- Poll render status (GET) ----
+  // Poll status for current job (call periodically)
   Future<void> pollRenderStatus() async {
     if (currentJob == null) return;
-
     try {
-      // Adjust path to match your backend route (example used /render/status/:id)
-      final path = '/render/status/${currentJob!.id}';
-      final result = await api.get(path);
-
-      if (result is Map<String, dynamic>) {
-        final updated = RenderJob.fromJson(result);
-        setJob(updated);
-      } else if (result is Map && result['data'] is Map<String, dynamic>) {
-        final updated = RenderJob.fromJson(result['data'] as Map<String, dynamic>);
-        setJob(updated);
-      } else {
-        debugPrint('Unexpected poll response: $result');
-      }
-    } catch (e, st) {
-      debugPrint('Status poll error: $e\n$st');
+      final result = await api.get('/render/status/${currentJob!.id}');
+      final updated = RenderJob.fromJson(result);
+      setJob(updated);
+    } catch (e) {
+      debugPrint('Status poll error: $e');
     }
   }
 }
