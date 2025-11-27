@@ -1,30 +1,33 @@
-// lib/models/scene_block.dart
 class SceneBlock {
+  String id;
   String environment;
   String camera;
   String motion;
-  String name;
+  Map<String, dynamic>? extra;
 
   SceneBlock({
-    required this.name,
-    this.environment = 'room',
-    this.camera = 'wide',
-    this.motion = 'static',
+    required this.id,
+    required this.environment,
+    required this.camera,
+    required this.motion,
+    this.extra,
   });
 
   factory SceneBlock.fromJson(Map<String, dynamic> j) {
     return SceneBlock(
-      name: j['name'] ?? '',
-      environment: j['environment'] ?? 'room',
-      camera: j['camera'] ?? 'wide',
-      motion: j['motion'] ?? 'static',
+      id: j['id'].toString(),
+      environment: j['environment'] ?? '',
+      camera: j['camera'] ?? '',
+      motion: j['motion'] ?? '',
+      extra: j['extra'] != null ? Map<String, dynamic>.from(j['extra']) : null,
     );
   }
 
   Map<String, dynamic> toJson() => {
-        'name': name,
+        'id': id,
         'environment': environment,
         'camera': camera,
         'motion': motion,
+        'extra': extra,
       };
 }
