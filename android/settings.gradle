@@ -51,7 +51,6 @@ if (flutterRoot == null || flutterRoot.trim().isEmpty()) {
     throw new GradleException("Flutter SDK not found. Set FLUTTER_ROOT or flutter.sdk in local.properties.")
 }
 
-apply from: "${flutterRoot}/packages/flutter_tools/gradle/app_plugin_loader.gradle"
 
 // include the app module
 include(":app")
