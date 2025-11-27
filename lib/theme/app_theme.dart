@@ -1,29 +1,85 @@
+// lib/theme/app_theme.dart
 import 'package:flutter/material.dart';
 
 class AppTheme {
-  static ThemeData light() {
-    final primary = Color(0xFF0F4C81);
-    final accent = Color(0xFFFF7A59);
-    return ThemeData(
-      primaryColor: primary,
-      colorScheme: ColorScheme.fromSwatch().copyWith(secondary: accent),
+  // Light theme getter
+  static ThemeData get light {
+    final base = ThemeData.light();
+    return base.copyWith(
+      useMaterial3: false,
+      primaryColor: const Color(0xFF0A74FF),
       scaffoldBackgroundColor: Colors.white,
-      appBarTheme: AppBarTheme(backgroundColor: primary, elevation: 0),
-      floatingActionButtonTheme: FloatingActionButtonThemeData(backgroundColor: accent),
-      textTheme: TextTheme(
-        headline6: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w700),
-        bodyText2: TextStyle(fontFamily: 'Inter'),
+      colorScheme: base.colorScheme.copyWith(
+        primary: const Color(0xFF0A74FF),
+        secondary: const Color(0xFF00BFA6),
+        brightness: Brightness.light,
       ),
+      appBarTheme: base.appBarTheme.copyWith(
+        elevation: 0,
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black87,
+      ),
+      textTheme: _buildTextTheme(base.textTheme, Brightness.light),
+      visualDensity: VisualDensity.adaptivePlatformDensity,
     );
   }
 
-  static ThemeData dark() {
-    final primary = Color(0xFF0F4C81);
-    final accent = Color(0xFFFF7A59);
-    return ThemeData.dark().copyWith(
-      primaryColor: primary,
-      colorScheme: ColorScheme.dark(secondary: accent),
-      floatingActionButtonTheme: FloatingActionButtonThemeData(backgroundColor: accent),
+  // Dark theme getter
+  static ThemeData get dark {
+    final base = ThemeData.dark();
+    return base.copyWith(
+      useMaterial3: false,
+      primaryColor: const Color(0xFF0A74FF),
+      scaffoldBackgroundColor: const Color(0xFF121212),
+      colorScheme: base.colorScheme.copyWith(
+        primary: const Color(0xFF0A74FF),
+        secondary: const Color(0xFF00BFA6),
+        brightness: Brightness.dark,
+      ),
+      appBarTheme: base.appBarTheme.copyWith(
+        elevation: 0,
+        backgroundColor: const Color(0xFF121212),
+        foregroundColor: Colors.white,
+      ),
+      textTheme: _buildTextTheme(base.textTheme, Brightness.dark),
+      visualDensity: VisualDensity.adaptivePlatformDensity,
+    );
+  }
+
+  // Centralized text theme builder mapping old names to new ones
+  static TextTheme _buildTextTheme(TextTheme base, Brightness brightness) {
+    final color = brightness == Brightness.dark ? Colors.white : Colors.black87;
+
+    return base.copyWith(
+      // headline6 -> titleLarge
+      titleLarge: base.titleLarge?.copyWith(
+            color: color,
+            fontSize: 20,
+            fontWeight: FontWeight.w700,
+          ) ??
+          TextStyle(color: color, fontSize: 20, fontWeight: FontWeight.w700),
+
+      // bodyText2 -> bodyMedium
+      bodyMedium: base.bodyMedium?.copyWith(
+            color: color,
+            fontSize: 14,
+          ) ??
+          TextStyle(color: color, fontSize: 14),
+
+      // subtitle1 -> titleMedium
+      titleMedium: base.titleMedium?.copyWith(
+            color: color,
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+          ) ??
+          TextStyle(color: color, fontSize: 16, fontWeight: FontWeight.w600),
+
+      // caption -> bodySmall
+      bodySmall: base.bodySmall?.copyWith(
+            color: color.withOpacity(0.8),
+            fontSize: 12,
+          ) ??
+          TextStyle(color: color.withOpacity(0.8), fontSize: 12),
     );
   }
 }
