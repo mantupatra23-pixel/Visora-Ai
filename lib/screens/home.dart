@@ -49,7 +49,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
               SizedBox(height: 12),
-              Text('Recent', style: Theme.of(context).textTheme.headline6),
+              Text('Recent', style: Theme.of(context).textTheme.titleLarge),
               SizedBox(height: 8),
               if (provider.loading) Center(child: CircularProgressIndicator()),
               for (var v in provider.videos) VideoCard(video: v),
