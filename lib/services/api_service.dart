@@ -1,46 +1,63 @@
-import 'dart:convert';
-import 'package:http/http.dart' as http;
+import 'package:dio/dio.dart';
 
 class ApiService {
   final String baseUrl;
-  final Map<String, String> defaultHeaders;
+  final Dio _dio = Dio();
 
-  ApiService({required this.baseUrl, Map<String, String>? headers})
-      : defaultHeaders = headers ?? {'Content-Type': 'application/json'};
-
-  // Create video job (POST /create-video)
-  Future<Map<String, dynamic>> createVideo(Map<String, dynamic> body) async {
-    final url = Uri.parse('$baseUrl/create-video');
-    final res = await http.post(url, headers: defaultHeaders, body: json.encode(body));
-    if (res.statusCode >= 200 && res.statusCode < 300) {
-      return json.decode(res.body) as Map<String, dynamic>;
-    }
-    throw Exception('createVideo failed: ${res.statusCode} ${res.body}');
+  ApiService({required this.baseUrl}) {
+    _dio.options.connectTimeout = const Duration(seconds: 15);
+    _dio.options.receiveTimeout = const Duration(seconds: 15);
   }
 
-  // Start render (GET /render/start/{job_id})
-  Future<Map<String, dynamic>> startRender(String jobId) async {
-    final url = Uri.parse('$baseUrl/render/start/$jobId');
-    final res = await http.get(url, headers: defaultHeaders);
-    if (res.statusCode >= 200 && res.statusCode < 300) {
-      return json.decode(res.body) as Map<String, dynamic>;
-    }
-    throw Exception('startRender failed: ${res.statusCode} ${res.body}');
+  // ---------------------------
+  // GENERIC GET
+  // ---------------------------
+  Future<dynamic> get(String endpoint) async {
+    final res = await _dio.get("$baseUrl$endpoint");
+    return res.data;
   }
 
-  // Get job status (GET /job/{job_id})
-  Future<Map<String, dynamic>> getJob(String jobId) async {
-    final url = Uri.parse('$baseUrl/job/$jobId');
-    final res = await http.get(url, headers: defaultHeaders);
-    if (res.statusCode >= 200 && res.statusCode < 300) {
-      return json.decode(res.body) as Map<String, dynamic>;
-    }
-    throw Exception('getJob failed: ${res.statusCode} ${res.body}');
+  // ---------------------------
+  // GENERIC POST
+  // ---------------------------
+  Future<dynamic> post(String endpoint, Map<String, dynamic> body) async {
+    final res = await _dio.post("$baseUrl$endpoint", data: body);
+    return res.data;
   }
 
-  // Download link (optional helper)
-  String videoUrl(String jobId) {
-    // Use the documented URL pattern
-    return '$baseUrl/videos/$jobId.mp4';
+  // ---------------------------
+  // CREATE VIDEO JOB
+  // POST /create-video
+  // ---------------------------
+  Future<String> createJob(String script) async {
+    final data = {"script": script};
+    final res = await post("/create-video", data);
+    return res["job_id"];
+  }
+
+  // ---------------------------
+  // START RENDER
+  // GET /render/start/{job_id}
+  // ---------------------------
+  Future<dynamic> startRender(String jobId) async {
+    final res = await get("/render/start/$jobId");
+    return res;
+  }
+
+  // ---------------------------
+  // JOB STATUS
+  // GET /job/{job_id}
+  // ---------------------------
+  Future<dynamic> pollStatus(String jobId) async {
+    final res = await get("/job/$jobId");
+    return res;
+  }
+
+  // ---------------------------
+  // DOWNLOAD VIDEO
+  // GET /download/{job_id}
+  // ---------------------------
+  Future<String> getVideoUrl(String jobId) async {
+    return "$baseUrl/videos/$jobId.mp4";
   }
 }
