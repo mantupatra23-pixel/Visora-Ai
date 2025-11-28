@@ -1,22 +1,32 @@
+// lib/models/character.dart
 class CharacterModel {
-  String id;
-  String name;
-  String voice;
-  String outfit;
+  final String id;
+  final String name;
+  final String voice; // e.g. male, female, kid
+  final String outfit; // outfit preset name
 
-  CharacterModel({required this.id, required this.name, this.voice = 'default', this.outfit = 'none'});
+  CharacterModel({
+    required this.id,
+    required this.name,
+    required this.voice,
+    required this.outfit,
+  });
 
-  factory CharacterModel.fromJson(Map<String, dynamic> json) => CharacterModel(
-    id: json['id']?.toString() ?? DateTime.now().millisecondsSinceEpoch.toString(),
-    name: json['name'] ?? '',
-    voice: json['voice'] ?? 'default',
-    outfit: json['outfit'] ?? 'none',
-  );
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'name': name,
+      'voice': voice,
+      'outfit': outfit,
+    };
+  }
 
-  Map<String, dynamic> toJson() => {
-    'id': id,
-    'name': name,
-    'voice': voice,
-    'outfit': outfit,
-  };
+  factory CharacterModel.fromJson(Map<String, dynamic> json) {
+    return CharacterModel(
+      id: json['id']?.toString() ?? '',
+      name: json['name']?.toString() ?? '',
+      voice: json['voice']?.toString() ?? '',
+      outfit: json['outfit']?.toString() ?? '',
+    );
+  }
 }
