@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import 'state/app_state.dart';
+import 'services/api_service.dart';
+
+// Screens
 import 'screens/home.dart';
 import 'screens/script_input.dart';
 import 'screens/characters.dart';
@@ -10,17 +13,14 @@ import 'screens/voice_lipsync.dart';
 import 'screens/render_settings.dart';
 import 'screens/render_status.dart';
 import 'screens/player.dart';
-import 'theme/app_theme.dart';
-import 'services/api_service.dart';
 
 void main() {
-  WidgetsFlutterBinding.ensureInitialized();
-
-  final api = ApiService(baseUrl: 'https://visora-backend-v2.onrender.com');
+  // API service instance
+  final api = ApiService(baseUrl: "https://visora-backend-v2.onrender.com");
 
   runApp(
     ChangeNotifierProvider(
-      create: (_) => AppState(apiService: api),
+      create: (_) => AppState(api: api),
       child: const VisoraApp(),
     ),
   );
@@ -32,9 +32,12 @@ class VisoraApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      debugShowCheckedModeBanner: false,
       title: 'Visora AI',
-      theme: AppTheme.light,
-      darkTheme: AppTheme.dark,
+      theme: ThemeData(
+        primarySwatch: Colors.deepPurple,
+        useMaterial3: true,
+      ),
       initialRoute: '/',
       routes: {
         '/': (_) => const HomeScreen(),
