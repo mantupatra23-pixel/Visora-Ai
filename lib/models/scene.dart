@@ -19,7 +19,9 @@ class SceneModel {
       id: j['id'].toString(),
       name: j['name'] ?? '',
       environment: j['environment'] ?? '',
-      blocks: blocksJson.map((e) => SceneBlock.fromJson(Map<String,dynamic>.from(e))).toList(),
+      blocks: blocksJson
+          .map((e) => SceneBlock.fromJson(Map<String, dynamic>.from(e)))
+          .toList(),
     );
   }
 
