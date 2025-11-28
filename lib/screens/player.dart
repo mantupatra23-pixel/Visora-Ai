@@ -1,65 +1,145 @@
-import 'package:flutter/material.dart';
-import 'package:url_launcher/url_launcher.dart'; // optional - add dependency in pubspec.yaml
+import 'package:flutter/foundation.dart';
+import 'package:visora_ai/services/api_service.dart';
+import 'package:visora_ai/models/scene.dart';
+import 'package:visora_ai/models/character.dart';
+import 'package:visora_ai/models/render_job.dart';
 
-/// Simple Video Player Screen
-/// - If you pass a videoUrl via constructor, it will show it and allow "Open" (via url_launcher).
-/// - If no videoUrl passed, it shows "No video available".
-class VideoPlayerScreen extends StatelessWidget {
-  final String? videoUrl;
+class AppState extends ChangeNotifier {
+  final ApiService api;
 
-  const VideoPlayerScreen({super.key, this.videoUrl});
+  AppState({required this.api});
 
-  Future<void> _openUrl(BuildContext context, String url) async {
-    final uri = Uri.tryParse(url);
-    if (uri == null) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Invalid URL')));
-      return;
-    }
-    try {
-      if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Could not open URL')));
-      }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Open failed: $e')));
+  // ---------------------------
+  // Script
+  // ---------------------------
+  String _script = "";
+  String get script => _script;
+  void setScript(String value) {
+    _script = value;
+    notifyListeners();
+  }
+
+  // ---------------------------
+  // Characters
+  // ---------------------------
+  final List<CharacterModel> _characters = [];
+  List<CharacterModel> get characters => List.unmodifiable(_characters);
+
+  void setCharacters(List<CharacterModel> list) {
+    _characters
+      ..clear()
+      ..addAll(list);
+    notifyListeners();
+  }
+
+  void addCharacter(CharacterModel c) {
+    _characters.add(c);
+    notifyListeners();
+  }
+
+  void removeCharacterAt(int idx) {
+    if (idx >= 0 && idx < _characters.length) {
+      _characters.removeAt(idx);
+      notifyListeners();
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final url = videoUrl;
-    return Scaffold(
-      appBar: AppBar(title: const Text('Player')),
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(18.0),
-          child: url == null || url.isEmpty
-              ? const Text('No video available yet', textAlign: TextAlign.center)
-              : Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Text('Video URL:', style: TextStyle(fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 8),
-                    SelectableText(url, textAlign: TextAlign.center),
-                    const SizedBox(height: 12),
-                    ElevatedButton.icon(
-                      icon: const Icon(Icons.open_in_new),
-                      label: const Text('Open Video (browser)'),
-                      onPressed: () => _openUrl(context, url),
-                    ),
-                    const SizedBox(height: 8),
-                    ElevatedButton.icon(
-                      icon: const Icon(Icons.copy),
-                      label: const Text('Copy URL'),
-                      onPressed: () {
-                        // copy to clipboard
-                        Clipboard.setData(ClipboardData(text: url));
-                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('URL copied')));
-                      },
-                    ),
-                  ],
-                ),
-        ),
-      ),
-    );
+  // ---------------------------
+  // Scenes
+  // ---------------------------
+  final List<SceneModel> _scenes = [];
+  List<SceneModel> get scenes => List.unmodifiable(_scenes);
+
+  void setScenes(List<SceneModel> list) {
+    _scenes
+      ..clear()
+      ..addAll(list);
+    notifyListeners();
+  }
+
+  void addScene(SceneModel s) {
+    _scenes.add(s);
+    notifyListeners();
+  }
+
+  void removeSceneAt(int idx) {
+    if (idx >= 0 && idx < _scenes.length) {
+      _scenes.removeAt(idx);
+      notifyListeners();
+    }
+  }
+
+  void reorderScenes(int oldIndex, int newIndex) {
+    if (oldIndex < 0 || oldIndex >= _scenes.length) return;
+    if (newIndex < 0 || newIndex > _scenes.length) return;
+    if (newIndex > oldIndex) newIndex--;
+    final it = _scenes.removeAt(oldIndex);
+    _scenes.insert(newIndex, it);
+    notifyListeners();
+  }
+
+  // ---------------------------
+  // Render job
+  // ---------------------------
+  RenderJob? _currentJob;
+  RenderJob? get currentJob => _currentJob;
+
+  void setJob(RenderJob job) {
+    _currentJob = job;
+    notifyListeners();
+  }
+
+  void clearJob() {
+    _currentJob = null;
+    notifyListeners();
+  }
+
+  // ---------------------------
+  // Start create video job on backend
+  // returns job id or throws
+  // ---------------------------
+  Future<String> startCreateJob() async {
+    final body = {
+      "script": _script,
+      "scenes": _scenes.map((s) => s.toJson()).toList(),
+      "characters": _characters.map((c) => c.toJson()).toList(),
+    };
+
+    final result = await api.post('/create-video', body);
+    // expected backend returns something like { "job_id": "abc123" }
+    if (result is Map && (result['job_id'] ?? result['id']) != null) {
+      final id = result['job_id'] ?? result['id'];
+      return id.toString();
+    }
+    // fallback: if backend returns full job object
+    if (result is Map && result['job'] != null) {
+      final jobJson = result['job'];
+      final job = RenderJob.fromJson(jobJson);
+      setJob(job);
+      return job.id ?? '';
+    }
+    throw Exception('Invalid create-job response: $result');
+  }
+
+  /// Call backend to start rendering (put in queue)
+  Future<void> startRender(String jobId) async {
+    // backend route example: GET /render/start/{job_id}
+    await api.get('/render/start/$jobId');
+  }
+
+  /// Poll status from backend and update current job
+  Future<void> pollRenderStatus() async {
+    if (_currentJob == null || _currentJob!.id == null) return;
+    try {
+      final result = await api.get('/job/${_currentJob!.id}');
+      // expected to return job json
+      if (result is Map) {
+        final updated = RenderJob.fromJson(result);
+        _currentJob = updated;
+        notifyListeners();
+      }
+    } catch (e) {
+      debugPrint('pollRenderStatus error: $e');
+    }
   }
 }
