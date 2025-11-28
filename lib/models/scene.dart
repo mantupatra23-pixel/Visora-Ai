@@ -1,34 +1,22 @@
-import 'scene_block.dart';
-
 class SceneModel {
-  String id;
   String name;
   String environment;
-  List<SceneBlock> blocks;
+  String camera;
+  String motion;
 
-  SceneModel({
-    required this.id,
-    required this.name,
-    required this.environment,
-    required this.blocks,
-  });
+  SceneModel({required this.name, this.environment = 'room', this.camera = 'wide', this.motion = 'none'});
 
-  factory SceneModel.fromJson(Map<String, dynamic> j) {
-    final blocksJson = (j['blocks'] as List? ?? []);
-    return SceneModel(
-      id: j['id'].toString(),
-      name: j['name'] ?? '',
-      environment: j['environment'] ?? '',
-      blocks: blocksJson
-          .map((e) => SceneBlock.fromJson(Map<String, dynamic>.from(e)))
-          .toList(),
-    );
-  }
+  factory SceneModel.fromJson(Map<String, dynamic> json) => SceneModel(
+    name: json['name'] ?? '',
+    environment: json['environment'] ?? 'room',
+    camera: json['camera'] ?? 'wide',
+    motion: json['motion'] ?? 'none',
+  );
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'name': name,
-        'environment': environment,
-        'blocks': blocks.map((b) => b.toJson()).toList(),
-      };
+    'name': name,
+    'environment': environment,
+    'camera': camera,
+    'motion': motion,
+  };
 }

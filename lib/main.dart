@@ -1,10 +1,12 @@
+// lib/main.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+// App state & services
 import 'state/app_state.dart';
 import 'services/api_service.dart';
 
-// Screens
+// Screens (ensure these files exist; placeholders ok for now)
 import 'screens/home.dart';
 import 'screens/script_input.dart';
 import 'screens/characters.dart';
@@ -14,9 +16,14 @@ import 'screens/render_settings.dart';
 import 'screens/render_status.dart';
 import 'screens/player.dart';
 
+// Optional theme file (if you added)
+import 'theme/app_theme.dart';
+
 void main() {
-  // API service instance
-  final api = ApiService(baseUrl: "https://visora-backend-v2.onrender.com");
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // API service instance (backend base URL)
+  final api = ApiService(baseUrl: 'https://visora-backend-v2.onrender.com');
 
   runApp(
     ChangeNotifierProvider(
@@ -34,21 +41,29 @@ class VisoraApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'Visora AI',
-      theme: ThemeData(
-        primarySwatch: Colors.deepPurple,
-        useMaterial3: true,
-      ),
+      // If you added theme/app_theme.dart use it, otherwise fallback to default ThemeData
+      theme: (AppTheme.available)
+          ? AppTheme.light
+          : ThemeData(
+              primarySwatch: Colors.deepPurple,
+              useMaterial3: true,
+            ),
+      darkTheme: (AppTheme.available) ? AppTheme.dark : null,
       initialRoute: '/',
       routes: {
-        '/': (_) => const HomeScreen(),
-        '/script': (_) => const ScriptInputScreen(),
-        '/characters': (_) => const CharactersScreen(),
-        '/scenes': (_) => const SceneBuilderScreen(),
-        '/voice': (_) => const VoiceLipsyncScreen(),
-        '/render': (_) => const RenderSettingsScreen(),
-        '/status': (_) => const RenderStatusScreen(),
-        '/player': (_) => const VideoPlayerScreen(),
+        '/': (ctx) => const HomeScreen(),
+        '/script': (ctx) => const ScriptInputScreen(),
+        '/characters': (ctx) => const CharactersScreen(),
+        '/scenes': (ctx) => const SceneBuilderScreen(),
+        '/voice': (ctx) => const VoiceLipsyncScreen(),
+        '/render': (ctx) => const RenderSettingsScreen(),
+        '/status': (ctx) => const RenderStatusScreen(),
+        '/player': (ctx) => const VideoPlayerScreen(),
       },
+      // basic fallback route
+      onUnknownRoute: (settings) => MaterialPageRoute(
+        builder: (_) => const HomeScreen(),
+      ),
     );
   }
 }

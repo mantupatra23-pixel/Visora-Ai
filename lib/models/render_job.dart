@@ -1,30 +1,24 @@
-// lib/models/render_job.dart
 class RenderJob {
-  String id;
-  String status;
-  double progress;
-  String? resultUrl;
+  final String id;
+  final String status;
+  final double progress;
+  final String? videoUrl;
 
-  RenderJob({
-    required this.id,
-    this.status = 'queued',
-    this.progress = 0.0,
-    this.resultUrl,
-  });
+  RenderJob({required this.id, required this.status, required this.progress, this.videoUrl});
 
-  factory RenderJob.fromJson(Map<String, dynamic> j) {
+  factory RenderJob.fromJson(Map<String, dynamic> json) {
     return RenderJob(
-      id: j['id']?.toString() ?? '',
-      status: j['status'] ?? 'queued',
-      progress: ((j['progress'] ?? 0) as num).toDouble(),
-      resultUrl: j['resultUrl']?.toString(),
+      id: json['job_id']?.toString() ?? json['id']?.toString() ?? '',
+      status: json['status']?.toString() ?? 'created',
+      progress: (json['progress'] != null) ? double.tryParse(json['progress'].toString()) ?? 0.0 : 0.0,
+      videoUrl: json['video_url'] ?? json['videoUrl'],
     );
   }
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'status': status,
-        'progress': progress,
-        'resultUrl': resultUrl,
-      };
+    'job_id': id,
+    'status': status,
+    'progress': progress,
+    'video_url': videoUrl,
+  };
 }

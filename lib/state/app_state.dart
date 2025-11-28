@@ -1,4 +1,3 @@
-// lib/state/app_state.dart
 import 'package:flutter/foundation.dart';
 import '../services/api_service.dart';
 import '../models/scene.dart';
@@ -8,93 +7,66 @@ import '../models/render_job.dart';
 class AppState extends ChangeNotifier {
   final ApiService api;
 
-  // constructor: ApiService required
+  // constructor
   AppState({required this.api});
 
-  // Script text
-  String script = "";
+  // script
+  String script = '';
+  void setScript(String v) { script = v; notifyListeners(); }
 
-  void setScript(String value) {
-    script = value;
-    notifyListeners();
-  }
-
-  // Characters
+  // characters
   List<CharacterModel> characters = [];
-  void setCharacters(List<CharacterModel> list) {
-    characters = List<CharacterModel>.from(list);
-    notifyListeners();
-  }
+  void setCharacters(List<CharacterModel> list) { characters = list; notifyListeners(); }
+  void addCharacter(CharacterModel c) { characters.add(c); notifyListeners(); }
 
-  void addCharacter(CharacterModel c) {
-    characters.add(c);
-    notifyListeners();
-  }
-
-  // Scenes
+  // scenes
   List<SceneModel> scenes = [];
-  void setScenes(List<SceneModel> list) {
-    scenes = List<SceneModel>.from(list);
-    notifyListeners();
-  }
+  void setScenes(List<SceneModel> list) { scenes = list; notifyListeners(); }
+  void addScene(SceneModel s) { scenes.add(s); notifyListeners(); }
 
-  void addScene(SceneModel s) {
-    scenes.add(s);
-    notifyListeners();
-  }
-
-  // Render Job
+  // job
   RenderJob? currentJob;
-  void setJob(RenderJob job) {
-    currentJob = job;
-    notifyListeners();
-  }
+  void setJob(RenderJob job) { currentJob = job; notifyListeners(); }
+  void clearJob() { currentJob = null; notifyListeners(); }
 
-  void clearJob() {
-    currentJob = null;
-    notifyListeners();
-  }
-
-  // Start Render Job: create project -> start render -> setJob
-  Future<void> startRenderJob() async {
+  // create video job (calls backend)
+  Future<String?> createProject() async {
+    final body = {
+      'script': script,
+      'scenes': scenes.map((s) => s.toJson()).toList(),
+      'characters': characters.map((c) => c.toJson()).toList(),
+    };
     try {
-      final body = {
-        'script': script,
-        'scenes': scenes.map((s) => s.toJson()).toList(),
-        'characters': characters.map((c) => c.toJson()).toList(),
-      };
-
-      // 1) create project on backend
-      final projectResp = await api.createProject(body);
-      // projectResp must contain projectId (backend dependent)
-      final projectId = projectResp['projectId'] ?? projectResp['id'] ?? projectResp['data']?['id'];
-
-      if (projectId == null) {
-        throw Exception('Invalid project id returned from backend');
-      }
-
-      // 2) start render
-      final startResp = await api.startRender(projectId.toString());
-
-      // 3) Parse returned job (assume backend returns job data)
-      // RenderJob.fromJson should handle response structure
-      final job = RenderJob.fromJson(startResp);
-      setJob(job);
+      final res = await api.createVideo(body);
+      final jobId = res['job_id'] ?? res['id'] ?? res['jobId'];
+      return jobId?.toString();
     } catch (e) {
-      debugPrint('Render job error: $e');
-      rethrow;
+      debugPrint('createProject error: $e');
+      return null;
     }
   }
 
-  // Poll status
-  Future<void> pollRenderStatus() async {
+  // start render
+  Future<bool> startRenderJob(String jobId) async {
+    try {
+      await api.startRender(jobId);
+      setJob(RenderJob(id: jobId, status: 'queued', progress: 0));
+      return true;
+    } catch (e) {
+      debugPrint('startRender error: $e');
+      return false;
+    }
+  }
+
+  // poll status
+  Future<void> pollStatus() async {
     if (currentJob == null) return;
     try {
-      final result = await api.get('/render/status', queryParameters: {'jobId': currentJob!.id});
-      final updated = RenderJob.fromJson(result);
+      final res = await api.getJob(currentJob!.id);
+      final updated = RenderJob.fromJson(res);
       setJob(updated);
     } catch (e) {
-      debugPrint('Status poll error: $e');
+      debugPrint('pollStatus error: $e');
     }
   }
 }
