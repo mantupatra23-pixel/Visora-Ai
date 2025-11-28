@@ -9,55 +9,52 @@ class ApiService {
     _dio.options.receiveTimeout = const Duration(seconds: 15);
   }
 
-  // ---------------------------
-  // GENERIC GET
-  // ---------------------------
+  // Generic GET
   Future<dynamic> get(String endpoint) async {
     final res = await _dio.get("$baseUrl$endpoint");
     return res.data;
   }
 
-  // ---------------------------
-  // GENERIC POST
-  // ---------------------------
+  // Generic POST
   Future<dynamic> post(String endpoint, Map<String, dynamic> body) async {
     final res = await _dio.post("$baseUrl$endpoint", data: body);
     return res.data;
   }
 
-  // ---------------------------
-  // CREATE VIDEO JOB
-  // POST /create-video
-  // ---------------------------
-  Future<String> createJob(String script) async {
-    final data = {"script": script};
-    final res = await post("/create-video", data);
-    return res["job_id"];
+  // create-video -> returns { "job_id": "..." }
+  Future<String> createJob(String script, {Map<String, dynamic>? extras}) async {
+    final body = <String, dynamic>{"script": script};
+    if (extras != null) body.addAll(extras);
+    final res = await post("/create-video", body);
+    // res might be Map -> job_id
+    return res is Map && res.containsKey("job_id") ? res["job_id"].toString() : res.toString();
   }
 
-  // ---------------------------
-  // START RENDER
-  // GET /render/start/{job_id}
-  // ---------------------------
+  // start render (GET /render/start/{job_id})
   Future<dynamic> startRender(String jobId) async {
     final res = await get("/render/start/$jobId");
     return res;
   }
 
-  // ---------------------------
-  // JOB STATUS
-  // GET /job/{job_id}
-  // ---------------------------
-  Future<dynamic> pollStatus(String jobId) async {
+  // get job status (GET /job/{job_id})
+  Future<Map<String, dynamic>> getJob(String jobId) async {
     final res = await get("/job/$jobId");
-    return res;
+    // ensure Map<String,dynamic>
+    return res is Map ? Map<String, dynamic>.from(res) : {"status": res.toString()};
   }
 
-  // ---------------------------
-  // DOWNLOAD VIDEO
-  // GET /download/{job_id}
-  // ---------------------------
-  Future<String> getVideoUrl(String jobId) async {
+  // video url helper
+  String videoUrl(String jobId) {
     return "$baseUrl/videos/$jobId.mp4";
+  }
+
+  // health check (optional)
+  Future<bool> health() async {
+    try {
+      final res = await get("/health");
+      return res == "ok" || (res is Map && (res["status"] == "ok" || res["alive"] == true));
+    } catch (_) {
+      return false;
+    }
   }
 }

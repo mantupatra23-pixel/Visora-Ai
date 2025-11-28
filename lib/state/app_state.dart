@@ -1,145 +1,99 @@
-import 'dart:async';
-import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import '../services/api_service.dart';
+
+// Placeholder model for RenderJob - adapt fields to your real model
+class RenderJob {
+  String id;
+  String status;
+  double progress;
+  String? videoUrl;
+  RenderJob({required this.id, required this.status, this.progress = 0, this.videoUrl});
+
+  factory RenderJob.fromJson(Map<String, dynamic> json) {
+    return RenderJob(
+      id: json['id']?.toString() ?? json['job_id']?.toString() ?? '',
+      status: json['status']?.toString() ?? 'created',
+      progress: (json['progress'] is num) ? (json['progress'] as num).toDouble() : 0.0,
+      videoUrl: json['video_url']?.toString(),
+    );
+  }
+}
 
 class AppState extends ChangeNotifier {
   final ApiService api;
 
   AppState({required this.api});
 
-  String? jobId;
-  Map<String, dynamic>? jobData;
-  String status = 'idle';
-  double progress = 0.0;
-  Timer? _pollTimer;
-  bool isBusy = false;
-  String? lastError;
-
-  // Create video job
-  Future<void> createVideoJob({
-    required String script,
-    List<Map<String, dynamic>>? scenes,
-    List<Map<String, dynamic>>? characters,
-    Map<String, dynamic>? options,
-  }) async {
-    try {
-      isBusy = true;
-      lastError = null;
-      notifyListeners();
-
-      final body = {
-        'script': script,
-        'scenes': scenes ?? [],
-        'characters': characters ?? [],
-        'options': options ?? {},
-      };
-
-      final res = await api.createVideo(body);
-      // Expect res to contain job_id or id
-      jobId = res['job_id']?.toString() ?? res['id']?.toString();
-      jobData = res;
-      status = jobData?['status']?.toString() ?? 'created';
-      progress = _extractProgress(jobData);
-      notifyListeners();
-    } catch (e) {
-      lastError = e.toString();
-      rethrow;
-    } finally {
-      isBusy = false;
-      notifyListeners();
-    }
-  }
-
-  // Start render
-  Future<void> startRender() async {
-    if (jobId == null) throw Exception('No jobId to start render');
-    try {
-      isBusy = true;
-      lastError = null;
-      notifyListeners();
-
-      final res = await api.startRender(jobId!);
-      // backend may return updated job
-      jobData = res;
-      status = jobData?['status']?.toString() ?? status;
-      progress = _extractProgress(jobData);
-      notifyListeners();
-
-      startPolling(); // start polling after request
-    } catch (e) {
-      lastError = e.toString();
-      rethrow;
-    } finally {
-      isBusy = false;
-      notifyListeners();
-    }
-  }
-
-  // Poll job status every interval
-  void startPolling({Duration interval = const Duration(seconds: 2)}) {
-    stopPolling();
-    _pollTimer = Timer.periodic(interval, (_) async {
-      await pollStatusOnce();
-    });
-  }
-
-  void stopPolling() {
-    _pollTimer?.cancel();
-    _pollTimer = null;
-  }
-
-  Future<void> pollStatusOnce() async {
-    if (jobId == null) return;
-    try {
-      final res = await api.getJob(jobId!);
-      jobData = res;
-      status = jobData?['status']?.toString() ?? status;
-      progress = _extractProgress(jobData);
-      notifyListeners();
-
-      if (status == 'completed' || status == 'failed') {
-        stopPolling();
-      }
-    } catch (e) {
-      // keep polling but save error
-      lastError = e.toString();
-      notifyListeners();
-    }
-  }
-
-  // Helper to get video URL
-  String? get videoUrl {
-    if (jobId == null) return null;
-    return api.videoUrl(jobId!);
-  }
-
-  // Clear job
-  void clearJob() {
-    jobId = null;
-    jobData = null;
-    status = 'idle';
-    progress = 0;
-    lastError = null;
-    stopPolling();
+  // script (getter + setter)
+  String _script = '';
+  String get script => _script;
+  void setScript(String s) {
+    _script = s;
     notifyListeners();
   }
 
-  double _extractProgress(Map<String, dynamic>? data) {
-    if (data == null) return 0.0;
-    try {
-      final p = data['progress'];
-      if (p == null) return 0.0;
-      if (p is num) return p.toDouble().clamp(0.0, 100.0) / 100.0;
-      final pnum = double.tryParse(p.toString());
-      return (pnum ?? 0.0).clamp(0.0, 100.0) / 100.0;
-    } catch (_) {
-      return 0.0;
+  // characters / scenes placeholders (lists) - adapt types
+  List<dynamic> _characters = [];
+  List<dynamic> get characters => _characters;
+  void setCharacters(List<dynamic> list) {
+    _characters = list;
+    notifyListeners();
+  }
+  void addCharacter(dynamic c) { _characters.add(c); notifyListeners(); }
+  void removeCharacterAt(int i) { _characters.removeAt(i); notifyListeners(); }
+
+  List<dynamic> _scenes = [];
+  List<dynamic> get scenes => _scenes;
+  void setScenes(List<dynamic> list) { _scenes = list; notifyListeners(); }
+  void addScene(dynamic s) { _scenes.add(s); notifyListeners(); }
+  void reorderScenes(int oldIdx, int newIdx) {
+    if (newIdx > oldIdx) newIdx--;
+    final it = _scenes.removeAt(oldIdx);
+    _scenes.insert(newIdx, it);
+    notifyListeners();
+  }
+
+  // current job
+  RenderJob? _currentJob;
+  RenderJob? get currentJob => _currentJob;
+
+  // start create job -> calls API.createJob
+  Future<String> startCreateJob() async {
+    final jobId = await api.createJob(_script, extras: {
+      // you can send characters/scenes if backend expects them
+      "characters": _characters,
+      "scenes": _scenes,
+    });
+    _currentJob = RenderJob(id: jobId, status: "created", progress: 0.0);
+    notifyListeners();
+    return jobId;
+  }
+
+  // start render (call startRender)
+  Future<void> startRenderJob(String jobId) async {
+    await api.startRender(jobId);
+    // poll/update maybe here or via pollRenderStatus
+    await pollRenderStatus(jobId);
+  }
+
+  // poll status once
+  Future<void> pollRenderStatus(String jobId) async {
+    final Map<String, dynamic> data = await api.getJob(jobId);
+    _currentJob = RenderJob.fromJson(data);
+    notifyListeners();
+  }
+
+  // helper: poll repeatedly (use carefully)
+  Future<void> pollUntilFinished(String jobId, {int intervalMs = 2000}) async {
+    while (true) {
+      await pollRenderStatus(jobId);
+      if (_currentJob == null) break;
+      if (_currentJob!.status == 'completed' || _currentJob!.status == 'failed') break;
+      await Future.delayed(Duration(milliseconds: intervalMs));
     }
   }
 
-  @override
-  void dispose() {
-    stopPolling();
-    super.dispose();
-  }
+  // video url getter
+  String? get videoUrl => _currentJob == null ? null : api.videoUrl(_currentJob!.id);
+
 }
