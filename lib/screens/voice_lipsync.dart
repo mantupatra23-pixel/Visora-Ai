@@ -1,28 +1,27 @@
 import 'package:flutter/material.dart';
-class VoiceLipsyncScreen extends StatefulWidget {
-  const VoiceLipsyncScreen({super.key});
-  @override
-  State<VoiceLipsyncScreen> createState() => _VoiceLipsyncScreenState();
-}
+import 'package:provider/provider.dart';
+import '../state/app_state.dart';
 
-class _VoiceLipsyncScreenState extends State<VoiceLipsyncScreen> {
-  String voiceType = 'Neutral';
-  String lipsync = 'Neutral fast';
-  bool noiseReduction = true;
+class VoiceLipsyncScreen extends StatelessWidget {
+  const VoiceLipsyncScreen({super.key});
+
   @override
   Widget build(BuildContext context) {
+    final st = context.watch<AppState>();
     return Scaffold(
       appBar: AppBar(title: const Text('Voice & Lipsync')),
-      body: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(children: [
-          DropdownButtonFormField(value: voiceType, items: ['Neutral','Male','Female','Kid','Elder'].map((s)=>DropdownMenuItem(value:s,child:Text(s))).toList(), onChanged: (v)=>setState(()=>voiceType=v!)),
-          const SizedBox(height: 8),
-          DropdownButtonFormField(value: lipsync, items: ['Neutral fast','Emotional','Exaggerated'].map((s)=>DropdownMenuItem(value:s,child:Text(s))).toList(), onChanged: (v)=>setState(()=>lipsync=v!)),
-          SwitchListTile(title: const Text('Background noise reduction'), value: noiseReduction, onChanged: (v)=>setState(()=>noiseReduction=v)),
-          const Spacer(),
-          ElevatedButton(child: const Text('Next: Render Settings'), onPressed: ()=>Navigator.pushNamed(context, '/render'))
-        ]),
+      body: Center(
+        child: Column(
+          children: [
+            const SizedBox(height: 20),
+            const Text('Pick voice and lipsync profile (placeholder)'),
+            const SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: () => Navigator.pushNamed(context, '/render'),
+              child: const Text('Next: Render Settings'),
+            )
+          ],
+        ),
       ),
     );
   }

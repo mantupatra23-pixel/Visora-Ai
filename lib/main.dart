@@ -6,7 +6,7 @@ import 'package:provider/provider.dart';
 import 'state/app_state.dart';
 import 'services/api_service.dart';
 
-// Screens (ensure these files exist; placeholders ok for now)
+// Screens (ensure these files exist; placeholders provided earlier)
 import 'screens/home.dart';
 import 'screens/script_input.dart';
 import 'screens/characters.dart';
@@ -41,29 +41,23 @@ class VisoraApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'Visora AI',
-      // If you added theme/app_theme.dart use it, otherwise fallback to default ThemeData
-      theme: (AppTheme.available)
-          ? AppTheme.light
-          : ThemeData(
-              primarySwatch: Colors.deepPurple,
-              useMaterial3: true,
-            ),
-      darkTheme: (AppTheme.available) ? AppTheme.dark : null,
+      // If you added theme/app_theme.dart use that, otherwise default ThemeData below will work
+      theme: (AppTheme != null) ? AppTheme.light : ThemeData(
+        primarySwatch: Colors.deepPurple,
+        useMaterial3: true,
+      ),
+      darkTheme: (AppTheme != null) ? AppTheme.dark : null,
       initialRoute: '/',
       routes: {
-        '/': (ctx) => const HomeScreen(),
-        '/script': (ctx) => const ScriptInputScreen(),
-        '/characters': (ctx) => const CharactersScreen(),
-        '/scenes': (ctx) => const SceneBuilderScreen(),
-        '/voice': (ctx) => const VoiceLipsyncScreen(),
-        '/render': (ctx) => const RenderSettingsScreen(),
-        '/status': (ctx) => const RenderStatusScreen(),
-        '/player': (ctx) => const VideoPlayerScreen(),
+        '/': (_) => const HomeScreen(),
+        '/script': (_) => const ScriptInputScreen(),
+        '/characters': (_) => const CharactersScreen(),
+        '/scenes': (_) => const SceneBuilderScreen(),
+        '/voice': (_) => const VoiceLipsyncScreen(),
+        '/render': (_) => const RenderSettingsScreen(),
+        '/status': (_) => const RenderStatusScreen(),
+        '/player': (_) => const VideoPlayerScreen(),
       },
-      // basic fallback route
-      onUnknownRoute: (settings) => MaterialPageRoute(
-        builder: (_) => const HomeScreen(),
-      ),
     );
   }
 }
