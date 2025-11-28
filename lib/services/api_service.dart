@@ -1,39 +1,46 @@
-import 'package:dio/dio.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 
 class ApiService {
   final String baseUrl;
-  final Dio _dio = Dio();
+  final Map<String, String> defaultHeaders;
 
-  ApiService({required this.baseUrl}) {
-    _dio.options.baseUrl = baseUrl;
-    _dio.options.connectTimeout = const Duration(seconds: 20);
-    _dio.options.receiveTimeout = const Duration(seconds: 30);
-  }
+  ApiService({required this.baseUrl, Map<String, String>? headers})
+      : defaultHeaders = headers ?? {'Content-Type': 'application/json'};
 
+  // Create video job (POST /create-video)
   Future<Map<String, dynamic>> createVideo(Map<String, dynamic> body) async {
-    final res = await _dio.post('/create-video', data: body);
-    return Map<String, dynamic>.from(res.data);
+    final url = Uri.parse('$baseUrl/create-video');
+    final res = await http.post(url, headers: defaultHeaders, body: json.encode(body));
+    if (res.statusCode >= 200 && res.statusCode < 300) {
+      return json.decode(res.body) as Map<String, dynamic>;
+    }
+    throw Exception('createVideo failed: ${res.statusCode} ${res.body}');
   }
 
+  // Start render (GET /render/start/{job_id})
   Future<Map<String, dynamic>> startRender(String jobId) async {
-    final res = await _dio.get('/render/start/$jobId');
-    return Map<String, dynamic>.from(res.data);
+    final url = Uri.parse('$baseUrl/render/start/$jobId');
+    final res = await http.get(url, headers: defaultHeaders);
+    if (res.statusCode >= 200 && res.statusCode < 300) {
+      return json.decode(res.body) as Map<String, dynamic>;
+    }
+    throw Exception('startRender failed: ${res.statusCode} ${res.body}');
   }
 
-  Future<Map<String, dynamic>> getJobStatus(String jobId) async {
-    final res = await _dio.get('/job/$jobId');
-    return Map<String, dynamic>.from(res.data);
+  // Get job status (GET /job/{job_id})
+  Future<Map<String, dynamic>> getJob(String jobId) async {
+    final url = Uri.parse('$baseUrl/job/$jobId');
+    final res = await http.get(url, headers: defaultHeaders);
+    if (res.statusCode >= 200 && res.statusCode < 300) {
+      return json.decode(res.body) as Map<String, dynamic>;
+    }
+    throw Exception('getJob failed: ${res.statusCode} ${res.body}');
   }
 
-  Future<Response<List<int>>> downloadVideo(String jobId) async {
-    // returns bytes; frontend can open url directly too
-    final res = await _dio.get<List<int>>('/download/$jobId',
-        options: Options(responseType: ResponseType.bytes));
-    return res;
-  }
-
-  Future<Map<String, dynamic>> health() async {
-    final res = await _dio.get('/health');
-    return Map<String, dynamic>.from(res.data);
+  // Download link (optional helper)
+  String videoUrl(String jobId) {
+    // Use the documented URL pattern
+    return '$baseUrl/videos/$jobId.mp4';
   }
 }
