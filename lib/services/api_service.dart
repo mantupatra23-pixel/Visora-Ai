@@ -1,58 +1,63 @@
+// lib/services/api_service.dart
 import 'package:dio/dio.dart';
 
 class ApiService {
   final String baseUrl;
-  final Dio _dio = Dio();
+  final Dio _dio;
 
-  ApiService({required this.baseUrl}) {
-    _dio.options.connectTimeout = const Duration(seconds: 15);
-    _dio.options.receiveTimeout = const Duration(seconds: 15);
+  ApiService({required this.baseUrl})
+      : _dio = Dio(BaseOptions(
+          baseUrl: baseUrl,
+          connectTimeout: Duration(milliseconds: 15000),
+          receiveTimeout: Duration(milliseconds: 15000),
+          responseType: ResponseType.json,
+        ));
+
+  /// POST /create-video  (body: { script, characters, scenes, preset? })
+  /// returns job id string (job_id)
+  Future<String> createJob(String script,
+      {List<dynamic>? characters, List<dynamic>? scenes, Map<String, dynamic>? preset}) async {
+    final body = {
+      'script': script,
+      'characters': characters ?? [],
+      'scenes': scenes ?? [],
+    };
+    if (preset != null) body['preset'] = preset;
+
+    final res = await _dio.post('/create-video', data: body);
+    // backend should return { job_id: 'xxx' } or { job_id: 'xxx' }
+    final data = res.data;
+    if (data == null) throw Exception('No response data from create-job');
+    final jobId = data['job_id'] ?? data['id'] ?? data['jobId'] ?? data['job_id'.toString()];
+    if (jobId == null) throw Exception('createJob response missing job id');
+    return jobId.toString();
   }
 
-  // Generic GET
-  Future<dynamic> get(String endpoint) async {
-    final res = await _dio.get("$baseUrl$endpoint");
-    return res.data;
+  /// GET /render/start/{job_id}
+  Future<void> startRender(String jobId) async {
+    await _dio.get('/render/start/$jobId');
   }
 
-  // Generic POST
-  Future<dynamic> post(String endpoint, Map<String, dynamic> body) async {
-    final res = await _dio.post("$baseUrl$endpoint", data: body);
-    return res.data;
-  }
-
-  // create-video -> returns { "job_id": "..." }
-  Future<String> createJob(String script, {Map<String, dynamic>? extras}) async {
-    final body = <String, dynamic>{"script": script};
-    if (extras != null) body.addAll(extras);
-    final res = await post("/create-video", body);
-    // res might be Map -> job_id
-    return res is Map && res.containsKey("job_id") ? res["job_id"].toString() : res.toString();
-  }
-
-  // start render (GET /render/start/{job_id})
-  Future<dynamic> startRender(String jobId) async {
-    final res = await get("/render/start/$jobId");
-    return res;
-  }
-
-  // get job status (GET /job/{job_id})
+  /// GET /job/{job_id} -> returns JSON map with status/progress/video_url etc.
   Future<Map<String, dynamic>> getJob(String jobId) async {
-    final res = await get("/job/$jobId");
-    // ensure Map<String,dynamic>
-    return res is Map ? Map<String, dynamic>.from(res) : {"status": res.toString()};
+    final res = await _dio.get('/job/$jobId');
+    final data = res.data;
+    if (data is Map<String, dynamic>) return data;
+    if (data is Map) return Map<String, dynamic>.from(data);
+    throw Exception('Invalid getJob response');
   }
 
-  // video url helper
-  String videoUrl(String jobId) {
-    return "$baseUrl/videos/$jobId.mp4";
+  /// optional helper to return a download url (if backend exposes static link pattern)
+  String videoUrlFor(String jobId) {
+    // If backend serves via /videos/{jobId}.mp4
+    return '$baseUrl/videos/$jobId.mp4';
   }
 
-  // health check (optional)
+  /// health
   Future<bool> health() async {
     try {
-      final res = await get("/health");
-      return res == "ok" || (res is Map && (res["status"] == "ok" || res["alive"] == true));
+      final res = await _dio.get('/health');
+      return res.statusCode == 200;
     } catch (_) {
       return false;
     }

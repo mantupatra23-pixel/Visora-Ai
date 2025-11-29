@@ -1,11 +1,10 @@
+// lib/main.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-
-// State & Services
-import 'state/app_state.dart';
 import 'services/api_service.dart';
+import 'state/app_state.dart';
 
-// Screens
+// import your screens here (make sure files exist)
 import 'screens/home.dart';
 import 'screens/script_input.dart';
 import 'screens/characters.dart';
@@ -18,17 +17,13 @@ import 'screens/player.dart';
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // backend base URL
-  final api = ApiService(baseUrl: "https://visora-ai-yclw.onrender.com");
+  // <-- set your backend URL here (you said changed to visora-ai-yclw.onrender.com)
+  final api = ApiService(baseUrl: 'https://visora-ai-yclw.onrender.com');
 
-  );
-
-  runApp(
-    ChangeNotifierProvider(
-      create: (_) => AppState(api: api),
-      child: const VisoraApp(),
-    ),
-  );
+  runApp(ChangeNotifierProvider(
+    create: (_) => AppState(api: api),
+    child: const VisoraApp(),
+  ));
 }
 
 class VisoraApp extends StatelessWidget {
@@ -37,12 +32,9 @@ class VisoraApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      debugShowCheckedModeBanner: false,
       title: 'Visora AI',
-      theme: ThemeData(
-        primarySwatch: Colors.deepPurple,
-        useMaterial3: true,
-      ),
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData(primarySwatch: Colors.deepPurple, useMaterial3: true),
       initialRoute: '/',
       routes: {
         '/': (_) => const HomeScreen(),

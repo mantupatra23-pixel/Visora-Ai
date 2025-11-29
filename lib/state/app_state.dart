@@ -1,6 +1,6 @@
 // lib/state/app_state.dart
 import 'dart:async';
-import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import '../services/api_service.dart';
 
 /// Simple RenderJob model
@@ -18,16 +18,17 @@ class RenderJob {
   });
 
   factory RenderJob.fromJson(Map<String, dynamic> json) {
-    final id = (json['id'] ?? json['job_id'] ?? '').toString();
+    final id = (json['id'] ?? json['job_id'] ?? json['jobId'] ?? '')?.toString();
     final status = (json['status'] ?? 'created').toString();
+    final progressRaw = json['progress'];
     double progress = 0.0;
-    if (json['progress'] is num) {
-      progress = (json['progress'] as num).toDouble();
-    } else if (json['progress'] is String) {
-      progress = double.tryParse(json['progress']) ?? 0.0;
+    if (progressRaw is num) progress = progressRaw.toDouble();
+    if (progressRaw is String) {
+      final parsed = double.tryParse(progressRaw) ?? 0.0;
+      progress = parsed;
     }
-    final videoUrl = json['video_url']?.toString() ?? json['videoUrl']?.toString();
-    return RenderJob(id: id, status: status, progress: progress, videoUrl: videoUrl);
+    final videoUrl = (json['video_url'] ?? json['videoUrl'] ?? json['url'])?.toString();
+    return RenderJob(id: id ?? '', status: status, progress: progress, videoUrl: videoUrl);
   }
 }
 
@@ -43,7 +44,7 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
-  // --- characters & scenes (store as dynamic lists so UI can adapt)
+  // --- characters & scenes (dynamic lists so UI can store maps/models)
   List<dynamic> _characters = [];
   List<dynamic> get characters => _characters;
   void setCharacters(List<dynamic> list) {
@@ -76,10 +77,8 @@ class AppState extends ChangeNotifier {
   }
 
   void reorderScenes(int oldIdx, int newIdx) {
-    if (oldIdx < 0 || oldIdx >= _scenes.length) return;
-    if (newIdx < 0) newIdx = 0;
-    if (newIdx >= _scenes.length) newIdx = _scenes.length - 1;
     if (newIdx > oldIdx) newIdx--;
+    if (oldIdx < 0 || oldIdx >= _scenes.length || newIdx < 0 || newIdx > _scenes.length) return;
     final it = _scenes.removeAt(oldIdx);
     _scenes.insert(newIdx, it);
     notifyListeners();
@@ -95,6 +94,9 @@ class AppState extends ChangeNotifier {
   String? _lastError;
   String? get lastError => _lastError;
 
+  // helper getter for UI (this fixes st.jobId errors)
+  String? get jobId => _currentJob?.id;
+
   // --- polling
   Timer? _pollTimer;
   bool _isPolling = false;
@@ -105,35 +107,17 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
-  // --- create job (calls POST /create-video)
+  // --- create job (returns jobId)
   Future<String> startCreateJob() async {
     try {
       _setError(null);
-      final body = {
-        "script": _script,
-        "characters": _characters,
-        "scenes": _scenes,
-      };
-
-      // backend expects POST /create-video (adjust path if your backend different)
-      final res = await api.post('/create-video', body);
-      // res can be Map or direct id string; handle common shapes
-      String jobId = '';
-      if (res is Map) {
-        jobId = (res['job_id'] ?? res['id'] ?? '').toString();
-      } else {
-        jobId = res?.toString() ?? '';
-      }
-
-      // fallback: if empty, try reading 'id' inside nested
-      if (jobId.isEmpty && res is Map && res.containsKey('data')) {
-        final d = res['data'];
-        if (d is Map && d.containsKey('job_id')) jobId = d['job_id'].toString();
-      }
-
-      // create a minimal RenderJob locally
+      final jobId = await api.createJob(
+        _script,
+        characters: _characters,
+        scenes: _scenes,
+      );
       _currentJob = RenderJob(id: jobId, status: 'created', progress: 0.0);
-      _jobData = {"id": jobId, "status": "created"};
+      _jobData = {'id': jobId, 'status': 'created'};
       notifyListeners();
       return jobId;
     } catch (e) {
@@ -142,11 +126,10 @@ class AppState extends ChangeNotifier {
     }
   }
 
-  // --- call backend to start render (GET /render/start/{job_id})
+  // start render flow (backend)
   Future<void> startRenderJob(String jobId) async {
     try {
-      _setError(null);
-      await api.get('/render/start/$jobId');
+      await api.startRender(jobId);
       // start polling automatically
       startPolling(jobId);
     } catch (e) {
@@ -154,30 +137,21 @@ class AppState extends ChangeNotifier {
     }
   }
 
-  // --- poll once and update
+  // poll once and update
   Future<void> pollRenderStatus(String jobId) async {
     try {
-      final data = await api.get('/job/$jobId');
-      // ensure Map<String,dynamic>
-      Map<String, dynamic> mapData;
-      if (data is Map<String, dynamic>) {
-        mapData = Map<String, dynamic>.from(data);
-      } else {
-        mapData = {"result": data};
-      }
-      _jobData = mapData;
-      _currentJob = RenderJob.fromJson(mapData);
+      final data = await api.getJob(jobId);
+      _jobData = Map<String, dynamic>.from(data);
+      _currentJob = RenderJob.fromJson(_jobData!);
       _setError(null);
     } catch (e) {
       _setError(e.toString());
     }
-    notifyListeners();
   }
 
-  // --- start polling repeatedly every intervalMs (default 2000ms)
+  // start repeated polling
   void startPolling(String jobId, {int intervalMs = 2000}) {
-    // clear existing
-    stopPolling();
+    stopPolling(); // clear existing if any
     _isPolling = true;
     _pollTimer = Timer.periodic(Duration(milliseconds: intervalMs), (t) async {
       if (!_isPolling) {
@@ -195,7 +169,6 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
-  // --- stop polling
   void stopPolling() {
     _isPolling = false;
     _pollTimer?.cancel();
@@ -203,7 +176,6 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
-  // --- clear job
   void clearJob() {
     stopPolling();
     _currentJob = null;
@@ -212,29 +184,12 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
-  // --- helper to get video url
-  String? get videoUrl => _currentJob == null ? null : _currentJob!.videoUrl;
+  // helper to get video url (if backend provides direct static URL)
+  String? get videoUrl => _currentJob?.videoUrl ?? (_jobData != null ? (_jobData!['video_url'] ?? _jobData!['videoUrl'])?.toString() : null);
 
-  // --- convenience small helpers used by UI
-  double get progress => _currentJob?.progress ?? 0.0;
-  String get status => _currentJob?.status ?? 'created';
-
-  // --- additional small wrappers (some UIs expect these names)
-  Future<void> pollStatusOnce(String jobId) => pollRenderStatus(jobId);
-  Future<void> startCreateAndRender() async {
-    final id = await startCreateJob();
-    await startRenderJob(id);
-  }
-
-  // --- try to fetch video url directly from backend endpoints if available
-  Future<String?> fetchVideoUrlFromApi(String jobId) async {
-    try {
-      final res = await api.get('/videos/$jobId.mp4'); // unlikely to return data; fallback below
-      if (res is String) return res;
-      if (res is Map && res['video_url'] != null) return res['video_url'].toString();
-      return null;
-    } catch (_) {
-      return null;
-    }
+  // helper: fetch latest job and update videoUrl field if present
+  Future<void> refreshJob() async {
+    if (_currentJob == null) return;
+    await pollRenderStatus(_currentJob!.id);
   }
 }
