@@ -19,8 +19,8 @@ void main() {
   WidgetsFlutterBinding.ensureInitialized();
 
   // backend base URL
-  final api = ApiService(
-    baseUrl: "https://visora-backend-v2.onrender.com",
+  final api = ApiService(baseUrl: "https://visora-ai-yclw.onrender.com");
+
   );
 
   runApp(
