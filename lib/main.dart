@@ -14,13 +14,12 @@ import 'screens/render_settings.dart';
 import 'screens/render_status.dart';
 import 'screens/player.dart';
 
-// theme
-import 'theme/app_theme.dart';
+// prefix the theme import to avoid name collisions (fixes AppTheme conflict)
+import 'theme/app_theme.dart' as app_theme;
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // backend base URL
   final api = ApiService(
     baseUrl: 'https://visora-ai-yclw.onrender.com',
   );
@@ -42,11 +41,11 @@ class VisoraApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       title: 'Visora AI',
 
-      theme: AppTheme.lightTheme,
-      darkTheme: AppTheme.darkTheme,
+      // use prefixed theme names to avoid collision
+      theme: app_theme.AppTheme.lightTheme,
+      darkTheme: app_theme.AppTheme.darkTheme,
 
       initialRoute: '/',
-
       routes: {
         '/': (_) => const HomeScreen(),
         '/script': (_) => const ScriptInputScreen(),
@@ -55,7 +54,7 @@ class VisoraApp extends StatelessWidget {
         '/settings': (_) => const RenderSettingsScreen(),
         '/status': (_) => const RenderStatusScreen(),
 
-        // IMPORTANT FIX
+        // player route — ensure screens/player.dart defines VideoPlayerScreen
         '/player': (_) => VideoPlayerScreen(),
       },
     );
