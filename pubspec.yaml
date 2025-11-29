@@ -11,7 +11,7 @@ environment:
     sdk: flutter
 
   provider: ^6.1.2
-  dio: ^5.4.0        # ← ADD THIS (IMPORTANT)
+  dio: ^5.4.0
   uuid: ^3.0.7
   video_player: ^2.8.6
   chewie: ^1.4.2
