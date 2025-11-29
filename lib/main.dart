@@ -1,7 +1,8 @@
+// lib/main.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-// state + api
+// app state & services
 import 'state/app_state.dart';
 import 'services/api_service.dart';
 
@@ -14,15 +15,14 @@ import 'screens/render_settings.dart';
 import 'screens/render_status.dart';
 import 'screens/player.dart';
 
-// prefix the theme import to avoid name collisions (fixes AppTheme conflict)
-import 'theme/app_theme.dart' as app_theme;
+// optional theme file (if you created it)
+import 'theme/app_theme.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
 
-  final api = ApiService(
-    baseUrl: 'https://visora-ai-yclw.onrender.com',
-  );
+  // set your backend base URL here
+  final api = ApiService(baseUrl: 'https://visora-ai-yclw.onrender.com');
 
   runApp(
     ChangeNotifierProvider(
@@ -40,23 +40,23 @@ class VisoraApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'Visora AI',
-
-      // use prefixed theme names to avoid collision
-      theme: app_theme.AppTheme.lightTheme,
-      darkTheme: app_theme.AppTheme.darkTheme,
-
+      theme: AppTheme.light,      // make sure lib/theme/app_theme.dart exists
+      darkTheme: AppTheme.dark,   // and exposes AppTheme.light / AppTheme.dark
       initialRoute: '/',
       routes: {
         '/': (_) => const HomeScreen(),
         '/script': (_) => const ScriptInputScreen(),
         '/characters': (_) => const CharactersScreen(),
-        '/scenes': (_) => const SceneBuilderScreen(),
-        '/settings': (_) => const RenderSettingsScreen(),
-        '/status': (_) => const RenderStatusScreen(),
-
-        // player route — ensure screens/player.dart defines VideoPlayerScreen
-        '/player': (_) => VideoPlayerScreen(),
+        '/builder': (_) => const SceneBuilderScreen(),
+        '/render-settings': (_) => const RenderSettingsScreen(),
+        '/render-status': (_) => const RenderStatusScreen(),
+        '/player': (_) => const VideoPlayerScreen(),
       },
+      // if you want to handle unknown routes:
+      onUnknownRoute: (settings) => MaterialPageRoute(
+        builder: (_) => const HomeScreen(),
+      ),
+      useInheritedMediaQuery: true,
     );
   }
 }
