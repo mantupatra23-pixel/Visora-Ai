@@ -2,7 +2,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-// app state & services
 import 'state/app_state.dart';
 import 'services/api_service.dart';
 
@@ -15,13 +14,13 @@ import 'screens/render_settings.dart';
 import 'screens/render_status.dart';
 import 'screens/player.dart';
 
-// optional theme file (if you created it)
+// theme
 import 'theme/app_theme.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // set your backend base URL here
+  // set your backend base URL here (use your render URL)
   final api = ApiService(baseUrl: 'https://visora-ai-yclw.onrender.com');
 
   runApp(
@@ -40,23 +39,18 @@ class VisoraApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'Visora AI',
-      theme: AppTheme.light,      // make sure lib/theme/app_theme.dart exists
-      darkTheme: AppTheme.dark,   // and exposes AppTheme.light / AppTheme.dark
+      theme: AppTheme.light,
+      darkTheme: AppTheme.dark,
       initialRoute: '/',
       routes: {
-        '/': (_) => const HomeScreen(),
-        '/script': (_) => const ScriptInputScreen(),
-        '/characters': (_) => const CharactersScreen(),
-        '/builder': (_) => const SceneBuilderScreen(),
-        '/render-settings': (_) => const RenderSettingsScreen(),
-        '/render-status': (_) => const RenderStatusScreen(),
-        '/player': (_) => const VideoPlayerScreen(),
+        '/': (context) => const HomeScreen(),
+        '/script': (context) => const ScriptInputScreen(),
+        '/characters': (context) => const CharactersScreen(),
+        '/scenes': (context) => const SceneBuilderScreen(),
+        '/render_settings': (context) => const RenderSettingsScreen(),
+        '/status': (context) => const RenderStatusScreen(),
+        '/player': (context) => const VideoPlayerScreen(),
       },
-      // if you want to handle unknown routes:
-      onUnknownRoute: (settings) => MaterialPageRoute(
-        builder: (_) => const HomeScreen(),
-      ),
-      useInheritedMediaQuery: true,
     );
   }
 }

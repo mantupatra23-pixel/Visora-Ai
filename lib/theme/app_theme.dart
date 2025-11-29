@@ -1,50 +1,38 @@
+// lib/theme/app_theme.dart
 import 'package:flutter/material.dart';
 
 class AppTheme {
-  // Light Theme
-  static final ThemeData lightTheme = ThemeData(
+  // LIGHT THEME
+  static final ThemeData light = ThemeData(
     brightness: Brightness.light,
-    useMaterial3: true,
-    primarySwatch: Colors.deepPurple,
+    primaryColor: Colors.deepPurple,
     scaffoldBackgroundColor: Colors.white,
-
     appBarTheme: const AppBarTheme(
-      backgroundColor: Colors.white,
-      foregroundColor: Colors.black,
-      elevation: 0,
-      centerTitle: false,
-      iconTheme: IconThemeData(color: Colors.black),
-    ),
-
-    elevatedButtonTheme: ElevatedButtonThemeData(
-      style: ElevatedButton.styleFrom(
-        padding: EdgeInsets.symmetric(vertical: 14, horizontal: 24),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-        ),
-      ),
-    ),
-
-    textTheme: const TextTheme(
-      titleLarge: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
-      bodyLarge: TextStyle(fontSize: 16),
-      bodyMedium: TextStyle(fontSize: 14),
-    ),
-  );
-
-  // Dark Theme (optional)
-  static final ThemeData darkTheme = ThemeData(
-    brightness: Brightness.dark,
-    useMaterial3: true,
-    primarySwatch: Colors.deepPurple,
-    scaffoldBackgroundColor: Colors.black,
-
-    appBarTheme: const AppBarTheme(
-      backgroundColor: Colors.black,
+      backgroundColor: Colors.deepPurple,
       foregroundColor: Colors.white,
       elevation: 0,
-      centerTitle: false,
-      iconTheme: IconThemeData(color: Colors.white),
     ),
+    colorScheme: ColorScheme.fromSeed(
+      seedColor: Colors.deepPurple,
+      brightness: Brightness.light,
+    ),
+    useMaterial3: true,
+  );
+
+  // DARK THEME
+  static final ThemeData dark = ThemeData(
+    brightness: Brightness.dark,
+    primaryColor: Colors.deepPurple,
+    scaffoldBackgroundColor: const Color(0xFF111111),
+    appBarTheme: const AppBarTheme(
+      backgroundColor: Color(0xFF222222),
+      foregroundColor: Colors.white,
+      elevation: 0,
+    ),
+    colorScheme: ColorScheme.fromSeed(
+      seedColor: Colors.deepPurple,
+      brightness: Brightness.dark,
+    ),
+    useMaterial3: true,
   );
 }
