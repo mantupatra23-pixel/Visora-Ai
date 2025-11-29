@@ -8,7 +8,7 @@ class SceneModel {
   SceneModel({
     required this.id,
     required this.name,
-    this.environment = 'room',
+    required this.environment,
     this.camera = 'wide',
     this.motion = 'none',
   });
@@ -21,11 +21,13 @@ class SceneModel {
         'motion': motion,
       };
 
-  factory SceneModel.fromJson(Map<String, dynamic> json) => SceneModel(
-        id: json['id'] ?? '',
-        name: json['name'] ?? '',
-        environment: json['environment'] ?? 'room',
-        camera: json['camera'] ?? 'wide',
-        motion: json['motion'] ?? 'none',
-      );
+  factory SceneModel.fromJson(Map<String, dynamic> json) {
+    return SceneModel(
+      id: (json['id'] ?? '').toString(),
+      name: (json['name'] ?? '').toString(),
+      environment: (json['environment'] ?? '').toString(),
+      camera: (json['camera'] ?? 'wide').toString(),
+      motion: (json['motion'] ?? 'none').toString(),
+    );
+  }
 }

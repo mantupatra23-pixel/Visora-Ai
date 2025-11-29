@@ -18,10 +18,12 @@ class CharacterModel {
         'outfit': outfit,
       };
 
-  factory CharacterModel.fromJson(Map<String, dynamic> json) => CharacterModel(
-        id: json['id'] ?? '',
-        name: json['name'] ?? '',
-        voice: json['voice'] ?? '',
-        outfit: json['outfit'] ?? '',
-      );
+  factory CharacterModel.fromJson(Map<String, dynamic> json) {
+    return CharacterModel(
+      id: (json['id'] ?? '').toString(),
+      name: (json['name'] ?? '').toString(),
+      voice: (json['voice'] ?? '').toString(),
+      outfit: (json['outfit'] ?? '').toString(),
+    );
+  }
 }
