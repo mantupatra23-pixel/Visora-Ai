@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+// state + api
 import 'state/app_state.dart';
 import 'services/api_service.dart';
 
@@ -13,14 +14,16 @@ import 'screens/render_settings.dart';
 import 'screens/render_status.dart';
 import 'screens/player.dart';
 
-// optional theme
+// theme
 import 'theme/app_theme.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // set your backend base URL here
-  final api = ApiService(baseUrl: 'https://visora-ai-yclw.onrender.com');
+  // backend base URL
+  final api = ApiService(
+    baseUrl: 'https://visora-ai-yclw.onrender.com',
+  );
 
   runApp(
     ChangeNotifierProvider(
@@ -38,17 +41,22 @@ class VisoraApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'Visora AI',
-      theme: AppTheme.light,
-      darkTheme: AppTheme.dark,
+
+      theme: AppTheme.lightTheme,
+      darkTheme: AppTheme.darkTheme,
+
       initialRoute: '/',
+
       routes: {
         '/': (_) => const HomeScreen(),
         '/script': (_) => const ScriptInputScreen(),
         '/characters': (_) => const CharactersScreen(),
         '/scenes': (_) => const SceneBuilderScreen(),
-        '/render_settings': (_) => const RenderSettingsScreen(),
+        '/settings': (_) => const RenderSettingsScreen(),
         '/status': (_) => const RenderStatusScreen(),
-        '/player': (_) => const VideoPlayerScreen(),
+
+        // IMPORTANT FIX
+        '/player': (_) => VideoPlayerScreen(),
       },
     );
   }
